@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockMessages, mockDoctors, mockPatients } from '@/data/mockData';
 import { Message, DoctorProfile, PatientProfile } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 import ChatInterface from '@/components/chat/ChatInterface';
 import AIChatAssistant from '@/components/chat/AIChatAssistant';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
