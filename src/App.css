@@ -1,4 +1,3 @@
-
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -13,10 +12,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em rgba(25, 118, 210, 0.6)); /* Primary color shadow */
+  filter: drop-shadow(0 0 2em #646cffaa);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em rgba(76, 175, 80, 0.6)); /* Secondary color shadow */
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 @keyframes logo-spin {
@@ -36,74 +35,8 @@
 
 .card {
   padding: 2em;
-  background-color: #FFFFFF;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .read-the-docs {
-  color: #546E7A; /* Muted foreground color */
-}
-
-/* Sample UI element styles to showcase the color palette */
-.btn-primary {
-  background-color: #1976D2;
-  color: #FFFFFF;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
-}
-
-.btn-primary:hover {
-  background-color: #0D47A1;
-}
-
-.btn-secondary {
-  background-color: #4CAF50;
-  color: #FFFFFF;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
-}
-
-.btn-secondary:hover {
-  background-color: #2E7D32;
-}
-
-.header-sample {
-  background-color: #1976D2;
-  color: #FFFFFF;
-  padding: 1rem;
-  border-radius: 0.5rem;
-}
-
-.card-sample {
-  background-color: #FFFFFF;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.alert-success {
-  background-color: #C8E6C9;
-  color: #2E7D32;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border-left: 4px solid #43A047;
-}
-
-.alert-warning {
-  background-color: #FFE0B2;
-  color: #E65100;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border-left: 4px solid #FF9800;
-}
-
-.alert-error {
-  background-color: #FFCDD2;
-  color: #C62828;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border-left: 4px solid #F44336;
+  color: #888;
 }
