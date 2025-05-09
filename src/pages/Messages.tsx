@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockMessages, mockDoctors, mockPatients } from '@/data/mockData';
@@ -67,7 +68,7 @@ export default function Messages() {
     if (!currentUser || !selectedContact) return;
 
     const newMessage: Message = {
-      id: uuidv4(),
+      id: nanoid(),
       senderId: currentUser.id,
       receiverId: selectedContact,
       content,

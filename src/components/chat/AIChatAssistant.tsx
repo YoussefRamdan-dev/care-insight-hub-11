@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 import ChatInterface from './ChatInterface';
 import { Message } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,7 +41,7 @@ export default function AIChatAssistant({ forDoctors = false }: AIChatAssistantP
   const { currentUser } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: uuidv4(),
+      id: nanoid(),
       senderId: 'ai-bot',
       receiverId: currentUser?.id || 'user',
       content: forDoctors 
@@ -55,7 +55,7 @@ export default function AIChatAssistant({ forDoctors = false }: AIChatAssistantP
   const handleSendMessage = (content: string) => {
     // Add user message
     const userMessage: Message = {
-      id: uuidv4(),
+      id: nanoid(),
       senderId: currentUser?.id || 'user',
       receiverId: 'ai-bot',
       content,
@@ -70,7 +70,7 @@ export default function AIChatAssistant({ forDoctors = false }: AIChatAssistantP
       const aiResponse = generateAIResponse(content);
       
       const aiMessage: Message = {
-        id: uuidv4(),
+        id: nanoid(),
         senderId: 'ai-bot',
         receiverId: currentUser?.id || 'user',
         content: aiResponse,
