@@ -78,7 +78,7 @@ export interface Laboratory {
 
 export interface Message {
   id: string;
-  senderId: string;
+  senderId: string; // User ID or 'ai-bot' for AI messages
   receiverId: string;
   content: string;
   timestamp: string; // ISO string

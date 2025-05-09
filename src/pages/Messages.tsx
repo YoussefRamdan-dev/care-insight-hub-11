@@ -1,110 +1,93 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import DashboardLayout from '../components/layout/DashboardLayout';
-import { mockMessages, mockDoctors, mockPatients } from '../data/mockData';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
-import { MessageSquare, Send } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Message } from '../types';
 
-const Messages = () => {
+import { useState, useEffect } from 'react';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/contexts/AuthContext';
+import { mockMessages, mockDoctors, mockPatients } from '@/data/mockData';
+import { Message, DoctorProfile, PatientProfile } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
+import ChatInterface from '@/components/chat/ChatInterface';
+import AIChatAssistant from '@/components/chat/AIChatAssistant';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Bot, Search, User } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+
+export default function Messages() {
   const { currentUser } = useAuth();
-  const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([...mockMessages]);
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [contacts, setContacts] = useState<Array<{ id: string; name: string; profileImage?: string }>>([]);
-  
+  const [selectedContactName, setSelectedContactName] = useState<string>('');
+  const [contacts, setContacts] = useState<(DoctorProfile | PatientProfile)[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState("contacts");
+
+  // Load contacts based on user role
   useEffect(() => {
     if (!currentUser) return;
 
-    // Get contacts based on user role
-    const userMessages = messages.filter(
-      msg => msg.senderId === currentUser.id || msg.receiverId === currentUser.id
+    if (currentUser.role === 'patient') {
+      setContacts(mockDoctors);
+    } else {
+      setContacts(mockPatients);
+    }
+  }, [currentUser]);
+
+  // Load messages for the selected contact
+  useEffect(() => {
+    if (!currentUser || !selectedContact) return;
+
+    const filteredMessages = mockMessages.filter(
+      (message) => 
+        (message.senderId === currentUser.id && message.receiverId === selectedContact) ||
+        (message.senderId === selectedContact && message.receiverId === currentUser.id)
     );
 
-    const contactIds = userMessages.map(msg => {
-      return msg.senderId === currentUser.id ? msg.receiverId : msg.senderId;
-    });
+    setMessages(filteredMessages.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    ));
+  }, [currentUser, selectedContact]);
 
-    const uniqueContactIds = [...new Set(contactIds)];
-    
-    let userContacts: Array<{ id: string; name: string; profileImage?: string }> = [];
-    
-    if (currentUser.role === 'patient') {
-      userContacts = mockDoctors
-        .filter(doctor => uniqueContactIds.includes(doctor.id))
-        .map(doctor => ({
-          id: doctor.id,
-          name: doctor.name,
-          profileImage: doctor.profileImage
-        }));
-    } else {
-      userContacts = mockPatients
-        .filter(patient => uniqueContactIds.includes(patient.id))
-        .map(patient => ({
-          id: patient.id,
-          name: patient.name,
-          profileImage: patient.profileImage
-        }));
+  // Set contact name when selecting a contact
+  useEffect(() => {
+    if (selectedContact) {
+      const contact = contacts.find(c => c.id === selectedContact);
+      if (contact) {
+        setSelectedContactName(contact.name);
+      }
     }
+  }, [selectedContact, contacts]);
 
-    setContacts(userContacts);
-    
-    // If there are contacts and none is selected, select the first one
-    if (userContacts.length > 0 && !selectedContact) {
-      setSelectedContact(userContacts[0].id);
-    }
-  }, [currentUser, messages, selectedContact]);
+  // Filter contacts by search term
+  const filteredContacts = contacts.filter(contact => 
+    contact.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedContact) return;
-    
-    const newMsg: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: currentUser?.id || '',
+  const handleSendMessage = (content: string) => {
+    if (!currentUser || !selectedContact) return;
+
+    const newMessage: Message = {
+      id: uuidv4(),
+      senderId: currentUser.id,
       receiverId: selectedContact,
-      content: newMessage,
+      content,
       timestamp: new Date().toISOString(),
       read: false
     };
-    
-    setMessages([...messages, newMsg]);
-    setNewMessage('');
-    
-    toast({
-      title: "Message Sent",
-      description: "Your message has been sent successfully.",
-    });
-  };
 
-  const getContactMessages = () => {
-    if (!selectedContact || !currentUser) return [];
+    // Add new message to the list
+    setMessages(prevMessages => [...prevMessages, newMessage]);
     
-    return messages.filter(
-      msg => (msg.senderId === currentUser.id && msg.receiverId === selectedContact) || 
-             (msg.receiverId === currentUser.id && msg.senderId === selectedContact)
-    ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  };
-  
-  const getContactName = (contactId: string) => {
-    const contact = contacts.find(c => c.id === contactId);
-    return contact ? contact.name : 'Unknown';
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // In a real app, you'd send this message to a backend/API
+    // For now, we'll just add it to our local state
   };
 
   if (!currentUser) {
     return (
       <DashboardLayout>
-        <div className="text-center py-12">
-          <p>Please login to view your messages.</p>
+        <div className="text-center py-10">
+          <p>Please log in to view your messages.</p>
         </div>
       </DashboardLayout>
     );
@@ -112,144 +95,101 @@ const Messages = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Messages</h1>
-
-        <Card className="bg-white flex h-[calc(80vh-120px)] rounded-lg overflow-hidden">
-          {/* Contacts Sidebar */}
-          <div className="w-full md:w-1/3 lg:w-1/4 border-r border-gray-100">
-            <div className="p-4 border-b">
-              <h2 className="font-semibold">Conversations</h2>
-            </div>
-            <div className="overflow-y-auto h-[calc(80vh-170px)]">
-              {contacts.length > 0 ? (
-                contacts.map(contact => (
-                  <div 
-                    key={contact.id}
-                    className={`flex items-center p-4 hover:bg-gray-50 cursor-pointer ${
-                      selectedContact === contact.id ? 'bg-primary-light' : ''
-                    }`}
-                    onClick={() => setSelectedContact(contact.id)}
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={contact.profileImage} alt={contact.name} />
-                      <AvatarFallback className="bg-primary-light text-primary-dark">
-                        {contact.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="ml-3">
-                      <p className="font-medium">{contact.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {currentUser.role === 'patient' ? 'Doctor' : 'Patient'}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-6 text-center">
-                  <p className="text-gray-500">No conversations yet</p>
+      <div className="container mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Messages</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left side - Contacts or AI Assistant */}
+          <div className="md:col-span-1">
+            <Tabs defaultValue="contacts" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full mb-4">
+                <TabsTrigger value="contacts" className="flex-1">Contacts</TabsTrigger>
+                <TabsTrigger value="ai" className="flex-1">AI Assistant</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="contacts" className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search contacts..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-              )}
-            </div>
+
+                <Card>
+                  <ScrollArea className="h-[500px]">
+                    {filteredContacts.length > 0 ? (
+                      <CardContent className="p-2">
+                        {filteredContacts.map((contact) => (
+                          <div
+                            key={contact.id}
+                            onClick={() => setSelectedContact(contact.id)}
+                            className={`flex items-center gap-3 p-3 rounded-md cursor-pointer hover:bg-gray-100 ${
+                              selectedContact === contact.id ? 'bg-gray-100' : ''
+                            }`}
+                          >
+                            <Avatar className="h-10 w-10 bg-primary-light">
+                              {contact.profileImage ? (
+                                <img
+                                  src={contact.profileImage}
+                                  alt={contact.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <User className="h-5 w-5 text-primary-dark" />
+                              )}
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{contact.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {currentUser.role === 'patient'
+                                  ? (contact as DoctorProfile).specialty?.replace('-', ' ')
+                                  : 'Patient'}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    ) : (
+                      <CardContent className="p-6 text-center">
+                        <p className="text-gray-500">No contacts found</p>
+                      </CardContent>
+                    )}
+                  </ScrollArea>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="ai">
+                <AIChatAssistant forDoctors={currentUser.role === 'doctor'} />
+              </TabsContent>
+            </Tabs>
           </div>
-
-          {/* Messages Area */}
-          <div className="hidden md:flex flex-col flex-1">
-            {selectedContact ? (
-              <>
-                {/* Message Header */}
-                <div className="p-4 border-b flex items-center">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src="" alt={getContactName(selectedContact)} />
-                    <AvatarFallback className="bg-primary-light text-primary-dark">
-                      {getContactName(selectedContact).charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h2 className="ml-3 font-semibold">{getContactName(selectedContact)}</h2>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {getContactMessages().map(msg => (
-                    <div 
-                      key={msg.id} 
-                      className={`flex ${msg.senderId === currentUser.id ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div 
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          msg.senderId === currentUser.id 
-                            ? 'bg-primary text-white' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        <p>{msg.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          msg.senderId === currentUser.id ? 'text-primary-50' : 'text-gray-500'
-                        }`}>
-                          {formatTimestamp(msg.timestamp)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  {getContactMessages().length === 0 && (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center">
-                        <MessageSquare size={40} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-gray-500">No messages yet</p>
-                        <p className="text-sm text-gray-400">Send a message to start the conversation</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Message Input */}
-                <div className="p-4 border-t">
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      placeholder="Type your message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                    />
-                    <Button 
-                      className="bg-primary hover:bg-primary-dark text-white"
-                      onClick={handleSendMessage}
-                      disabled={!newMessage.trim()}
-                    >
-                      <Send size={18} />
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center">
-                  <MessageSquare size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="font-medium text-gray-700">No conversation selected</h3>
-                  <p className="text-gray-500 max-w-md mt-2">
-                    Select a contact to start messaging or view your conversation history.
+          
+          {/* Right side - Chat Interface */}
+          <div className="md:col-span-2">
+            {selectedContact && activeTab === "contacts" ? (
+              <ChatInterface
+                recipientId={selectedContact}
+                recipientName={selectedContactName}
+                messages={messages}
+                onSendMessage={handleSendMessage}
+              />
+            ) : activeTab === "contacts" ? (
+              <Card className="flex items-center justify-center h-[600px] border">
+                <div className="text-center p-6">
+                  <User className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                  <h3 className="text-lg font-medium text-gray-700">Select a contact</h3>
+                  <p className="text-gray-500 max-w-xs mx-auto mt-2">
+                    Choose a contact from the list to start a conversation
                   </p>
                 </div>
-              </div>
-            )}
+              </Card>
+            ) : null}
           </div>
-
-          {/* Mobile message view placeholder */}
-          <div className="flex flex-col flex-1 md:hidden items-center justify-center">
-            <MessageSquare size={48} className="text-gray-300 mb-4" />
-            <p className="text-gray-500">
-              Select a conversation to view on this device
-            </p>
-          </div>
-        </Card>
+        </div>
       </div>
     </DashboardLayout>
   );
-};
-
-export default Messages;
+}
