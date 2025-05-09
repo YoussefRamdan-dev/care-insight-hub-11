@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -243,7 +242,7 @@ const Dashboard = () => {
                       </h3>
                       <p className="text-sm text-gray-600">
                         {currentUser.role === 'patient' 
-                          ? user.specialty.replace('-', ' ') 
+                          ? (user as DoctorProfile).specialty.replace('-', ' ') 
                           : user.email}
                       </p>
                     </div>

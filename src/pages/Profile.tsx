@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { PatientProfile, DoctorProfile } from '../types';
+import { PatientProfile, DoctorProfile, User } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,28 +16,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { FileText, User } from 'lucide-react';
+import { FileText, User as UserIcon } from 'lucide-react';
 
 const Profile = () => {
   const { currentUser, updateUserProfile } = useAuth();
   const { toast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(currentUser);
+  const [profileData, setProfileData] = useState<PatientProfile | DoctorProfile | User | null>(currentUser);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setProfileData({ ...profileData, [name]: value });
+    setProfileData(prev => prev ? { ...prev, [name]: value } : null);
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setProfileData({ ...profileData, [name]: value });
+    setProfileData(prev => prev ? { ...prev, [name]: value } : null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateUserProfile(profileData as Partial<PatientProfile | DoctorProfile>);
+      if (profileData) {
+        await updateUserProfile(profileData as Partial<PatientProfile | DoctorProfile>);
+      }
       setIsEditing(false);
       toast({
         title: "Profile Updated",
@@ -54,6 +55,7 @@ const Profile = () => {
   };
 
   const renderPatientProfile = () => {
+    if (!profileData || profileData.role !== 'patient') return null;
     const patient = profileData as PatientProfile;
     
     return (
@@ -284,7 +286,12 @@ const Profile = () => {
                     value={patient?.chronicDiseases?.join(', ') || ''}
                     onChange={(e) => {
                       const diseases = e.target.value.split(',').map(disease => disease.trim());
-                      setProfileData({ ...profileData, chronicDiseases: diseases });
+                      if (profileData && profileData.role === 'patient') {
+                        setProfileData({
+                          ...profileData,
+                          chronicDiseases: diseases
+                        });
+                      }
                     }}
                     placeholder="Enter any chronic diseases, separated by commas..."
                   />
@@ -298,7 +305,12 @@ const Profile = () => {
                     value={patient?.medications?.join(', ') || ''}
                     onChange={(e) => {
                       const medications = e.target.value.split(',').map(med => med.trim());
-                      setProfileData({ ...profileData, medications });
+                      if (profileData && profileData.role === 'patient') {
+                        setProfileData({
+                          ...profileData,
+                          medications
+                        });
+                      }
                     }}
                     placeholder="Enter any medications you are currently taking, separated by commas..."
                   />
@@ -360,6 +372,7 @@ const Profile = () => {
   };
 
   const renderDoctorProfile = () => {
+    if (!profileData || profileData.role !== 'doctor') return null;
     const doctor = profileData as DoctorProfile;
     
     return (
@@ -457,7 +470,12 @@ const Profile = () => {
                     value={doctor?.certifications?.join(', ') || ''}
                     onChange={(e) => {
                       const certifications = e.target.value.split(',').map(cert => cert.trim());
-                      setProfileData({ ...profileData, certifications });
+                      if (profileData && profileData.role === 'doctor') {
+                        setProfileData({
+                          ...profileData,
+                          certifications
+                        });
+                      }
                     }}
                     placeholder="Enter your certifications, separated by commas..."
                   />
@@ -558,15 +576,20 @@ const Profile = () => {
                         id={day}
                         checked={isAvailable}
                         onChange={(e) => {
-                          let availableDays = [...(doctor?.availableDays || [])];
-                          if (e.target.checked) {
-                            if (!availableDays.includes(day)) {
-                              availableDays.push(day);
+                          if (profileData && profileData.role === 'doctor') {
+                            let availableDays = [...(doctor?.availableDays || [])];
+                            if (e.target.checked) {
+                              if (!availableDays.includes(day)) {
+                                availableDays.push(day);
+                              }
+                            } else {
+                              availableDays = availableDays.filter(d => d !== day);
                             }
-                          } else {
-                            availableDays = availableDays.filter(d => d !== day);
+                            setProfileData({
+                              ...profileData,
+                              availableDays
+                            });
                           }
-                          setProfileData({ ...profileData, availableDays });
                         }}
                         className="rounded border-gray-300 text-primary focus:ring-primary"
                       />
@@ -625,7 +648,7 @@ const Profile = () => {
                       className="w-full h-full rounded-full object-cover" 
                     />
                   ) : (
-                    <User size={36} className="text-primary-dark" />
+                    <UserIcon size={36} className="text-primary-dark" />
                   )}
                 </div>
                 <h2 className="text-xl font-bold">{currentUser.name}</h2>

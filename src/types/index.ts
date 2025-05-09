@@ -83,7 +83,7 @@ export interface Message {
   content: string;
   timestamp: string; // ISO string
   read: boolean;
-  appointmentId?: string; // optional reference to an appointment
+  appointmentId?: string; // Made optional to fix the error
 }
 
 export interface DiagnosisResult {

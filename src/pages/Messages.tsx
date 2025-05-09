@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -9,11 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { MessageSquare, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Message } from '../types';
 
 const Messages = () => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const [messages, setMessages] = useState([...mockMessages]);
+  const [messages, setMessages] = useState<Message[]>([...mockMessages]);
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [contacts, setContacts] = useState<Array<{ id: string; name: string; profileImage?: string }>>([]);
@@ -63,7 +63,7 @@ const Messages = () => {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedContact) return;
     
-    const newMsg = {
+    const newMsg: Message = {
       id: `msg-${Date.now()}`,
       senderId: currentUser?.id || '',
       receiverId: selectedContact,
