@@ -20,53 +20,89 @@ export default {
 		},
 		extend: {
 			colors: {
+				// Primary colors - professional blue tones
+				primary: {
+					DEFAULT: '#1976D2', // Main primary - trustworthy medium blue
+					light: '#64B5F6', // Light accent
+					dark: '#0D47A1', // Darker shade for hover states
+					foreground: '#FFFFFF'
+				},
+				
+				// Secondary colors - cheerful but professional
+				secondary: {
+					DEFAULT: '#4CAF50', // Soft green - cheerful but professional
+					light: '#A5D6A7', // Lighter green for subtle UI elements
+					dark: '#2E7D32', // Darker green for hover states
+					foreground: '#FFFFFF'
+				},
+				
+				// Success colors
+				success: {
+					DEFAULT: '#43A047', // Green for positive confirmations
+					light: '#C8E6C9', // Light green backgrounds
+					foreground: '#FFFFFF'
+				},
+				
+				// Warning colors
+				warning: {
+					DEFAULT: '#FF9800', // Orange for alerts
+					light: '#FFE0B2', // Light orange backgrounds
+					foreground: '#FFFFFF'
+				},
+				
+				// Error/destructive colors
+				destructive: {
+					DEFAULT: '#F44336', // Red for errors
+					light: '#FFCDD2', // Light red background
+					foreground: '#FFFFFF'
+				},
+				
+				// Neutral UI colors
+				neutral: {
+					DEFAULT: '#78909C', // Blue-gray for neutral elements
+					light: '#CFD8DC',
+					dark: '#455A64',
+					foreground: '#FFFFFF'
+				},
+				
+				// Branded accent colors for UI elements
+				accent: {
+					blue: '#E3F2FD', // Super light blue
+					green: '#F1F8E9', // Super light green
+					peach: '#FFF3E0', // Warm light peach
+					teal: '#E0F7FA', // Light teal
+					foreground: '#263238'
+				},
+				
+				// System UI Colors
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
-				background: 'hsl(var(--background))',
-				foreground: 'hsl(var(--foreground))',
-				primary: {
-					DEFAULT: '#9b87f5',
-					light: '#D6BCFA',
-					dark: '#7E69AB',
-					foreground: 'hsl(var(--primary-foreground))'
-				},
-				secondary: {
-					DEFAULT: '#D3E4FD',
-					dark: '#1A1F2C',
-					foreground: 'hsl(var(--secondary-foreground))'
-				},
-				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
-				},
+				background: '#F5F7FA', // Light gray-blue background
+				foreground: '#263238', // Near-black text color
 				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
-				},
-				accent: {
-					DEFAULT: '#E5DEFF',
-					green: '#F2FCE2',
-					peach: '#FDE1D3',
-					foreground: 'hsl(var(--accent-foreground))'
+					DEFAULT: '#ECEFF1', // Very light gray-blue
+					foreground: '#546E7A' // Medium gray-blue text
 				},
 				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))'
+					DEFAULT: '#FFFFFF',
+					foreground: '#263238'
 				},
 				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
+					DEFAULT: '#FFFFFF',
+					foreground: '#263238'
 				},
+				
+				// Sidebar specific colors
 				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+					DEFAULT: '#FFFFFF',
+					foreground: '#455A64',
+					primary: '#1976D2',
+					'primary-foreground': '#FFFFFF',
+					accent: '#E3F2FD',
+					'accent-foreground': '#1976D2',
+					border: '#E0E0E0',
+					ring: '#1976D2'
 				}
 			},
 			borderRadius: {
