@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Clock } from 'lucide-react';
 
 const BookAppointment = () => {
   const { doctorId } = useParams<{ doctorId: string }>();
@@ -80,17 +82,11 @@ const BookAppointment = () => {
           
           setAvailableTimes(times);
         } else {
-          // Use default schedule for demonstration purposes
-          const times = [];
-          const startHour = 9;
-          const endHour = 17;
-          
-          for (let hour = startHour; hour < endHour; hour++) {
-            times.push(`${hour}:00`);
-            times.push(`${hour}:30`);
-          }
-          
-          setAvailableTimes(times);
+          setAvailableTimes([]);
+          toast({
+            title: "No Hours Available",
+            description: `Dr. ${doctor.name} does not have specific hours set for ${dayOfWeek}. Please select another day.`,
+          });
         }
       } else {
         setAvailableTimes([]);
@@ -196,6 +192,35 @@ const BookAppointment = () => {
                         {day}
                       </Badge>
                     ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-medium mb-2">Weekly Schedule</h3>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">Day</TableHead>
+                          <TableHead>Hours</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {doctor.availableHours?.map((schedule) => (
+                          <TableRow key={schedule.day}>
+                            <TableCell className="font-medium">{schedule.day}</TableCell>
+                            <TableCell>
+                              {schedule.hours.map((hour, idx) => (
+                                <div key={idx} className="flex items-center text-sm mb-1 last:mb-0">
+                                  <Clock className="h-3 w-3 mr-1 text-gray-400" />
+                                  {hour.start} - {hour.end}
+                                </div>
+                              ))}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
 

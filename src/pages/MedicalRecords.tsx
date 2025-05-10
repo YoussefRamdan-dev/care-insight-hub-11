@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,98 +7,41 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar, FileText, ChevronRight, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { mockMedicalRecords, mockDoctors } from '@/data/mockData';
 import { MedicalRecord, DiagnosisResult, DiagnosticFile } from '@/types';
-
-// Mock data for demonstration
-const mockMedicalRecords: MedicalRecord[] = [
-  {
-    id: 'rec-1',
-    patientId: 'patient-1',
-    doctorId: 'doctor-1',
-    createdAt: '2023-04-15T10:30:00Z',
-    updatedAt: '2023-04-15T11:45:00Z',
-    diagnoses: [
-      {
-        id: 'diag-1',
-        appointmentId: 'appt-1',
-        patientId: 'patient-1',
-        doctorId: 'doctor-1',
-        date: '2023-04-15T10:30:00Z',
-        result: 'Early stage melanoma detected',
-        predictionScore: 0.87,
-        treatmentPlan: 'Surgical removal of the affected area followed by regular check-ups',
-        followUpDate: '2023-05-15T10:30:00Z',
-        reviewedByDoctor: true
-      }
-    ],
-    files: [
-      {
-        id: 'file-1',
-        patientId: 'patient-1',
-        appointmentId: 'appt-1',
-        fileUrl: '/placeholder.svg',
-        fileName: 'skin_scan_1.jpg',
-        uploadDate: '2023-04-10T14:20:00Z',
-        fileType: 'image/jpeg'
-      },
-      {
-        id: 'file-2',
-        patientId: 'patient-1',
-        appointmentId: 'appt-1',
-        fileUrl: '/placeholder.svg',
-        fileName: 'lab_results.pdf',
-        uploadDate: '2023-04-12T09:15:00Z',
-        fileType: 'application/pdf'
-      }
-    ],
-    treatmentNotes: 'Patient responded well to initial consultations. Scheduled for surgery on May 1st.',
-    appointmentSummary: 'Patient presented with an irregular mole on the upper back. AI analysis suggests early stage melanoma with high confidence. Recommended surgical removal and preventive measures.'
-  },
-  {
-    id: 'rec-2',
-    patientId: 'patient-1',
-    doctorId: 'doctor-2',
-    createdAt: '2023-02-22T14:00:00Z',
-    updatedAt: '2023-02-22T15:30:00Z',
-    diagnoses: [
-      {
-        id: 'diag-2',
-        appointmentId: 'appt-2',
-        patientId: 'patient-1',
-        doctorId: 'doctor-2',
-        date: '2023-02-22T14:00:00Z',
-        result: 'Benign skin condition - Seborrheic keratosis',
-        predictionScore: 0.92,
-        treatmentPlan: 'No treatment necessary. Keep area clean and monitor for changes.',
-        followUpDate: '2023-08-22T14:00:00Z',
-        reviewedByDoctor: true
-      }
-    ],
-    files: [
-      {
-        id: 'file-3',
-        patientId: 'patient-1',
-        appointmentId: 'appt-2',
-        fileUrl: '/placeholder.svg',
-        fileName: 'skin_area_photo.jpg',
-        uploadDate: '2023-02-20T11:45:00Z',
-        fileType: 'image/jpeg'
-      }
-    ],
-    treatmentNotes: 'Patient concerned about dark spot on forearm. AI and visual examination confirm benign condition.',
-    appointmentSummary: 'Patient came in for assessment of a dark spot on the forearm. Confirmed as seborrheic keratosis, a common benign skin growth. No treatment required.'
-  }
-];
 
 const MedicalRecords = () => {
   const { currentUser } = useAuth();
   const [activeRecord, setActiveRecord] = useState<MedicalRecord | null>(null);
+  const [userRecords, setUserRecords] = useState<MedicalRecord[]>([]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Filter records for the current user
+    if (currentUser.role === 'patient') {
+      const patientRecords = mockMedicalRecords.filter(record => 
+        record.patientId === currentUser.id
+      );
+      setUserRecords(patientRecords);
+    }
+  }, [currentUser]);
 
   if (!currentUser) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <p>Please log in to view your medical records</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (currentUser.role !== 'patient') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <p>This page is only available for patients</p>
         </div>
       </DashboardLayout>
     );
@@ -113,23 +56,18 @@ const MedicalRecords = () => {
   };
 
   const getDoctorName = (doctorId: string) => {
-    // In a real app, this would fetch from your data source
-    const doctorNames: {[key: string]: string} = {
-      'doctor-1': 'Dr. Sarah Johnson',
-      'doctor-2': 'Dr. Michael Chen',
-    };
-    
-    return doctorNames[doctorId] || 'Unknown Doctor';
+    const doctor = mockDoctors.find(doc => doc.id === doctorId);
+    return doctor ? doctor.name : 'Unknown Doctor';
   };
 
   const getSpecialtyFromDoctorId = (doctorId: string) => {
-    // In a real app, this would fetch from your data source
-    const doctorSpecialties: {[key: string]: string} = {
-      'doctor-1': 'Skin Cancer Specialist',
-      'doctor-2': 'Dermatologist',
-    };
+    const doctor = mockDoctors.find(doc => doc.id === doctorId);
+    if (!doctor) return 'Specialist';
     
-    return doctorSpecialties[doctorId] || 'Specialist';
+    return doctor.specialty.replace('-', ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ') + ' Specialist';
   };
 
   const getFileTypeIcon = (fileType: string) => {
@@ -297,12 +235,12 @@ const MedicalRecords = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Medical Records</CardTitle>
+                <CardTitle>Your Medical Records</CardTitle>
               </CardHeader>
               <CardContent>
-                {mockMedicalRecords.length > 0 ? (
+                {userRecords.length > 0 ? (
                   <div className="space-y-2">
-                    {mockMedicalRecords.map((record) => (
+                    {userRecords.map((record) => (
                       <div
                         key={record.id}
                         onClick={() => setActiveRecord(record)}

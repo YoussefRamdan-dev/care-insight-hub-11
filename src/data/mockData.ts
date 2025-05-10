@@ -1,4 +1,5 @@
-import { PatientProfile, DoctorProfile, Specialty, Appointment, Laboratory, DiagnosticFile } from "../types";
+
+import { PatientProfile, DoctorProfile, Specialty, Appointment, Laboratory, DiagnosticFile, MedicalRecord, DiagnosisResult } from "../types";
 
 // Mock Patients
 export const mockPatients: PatientProfile[] = [
@@ -55,6 +56,24 @@ export const mockDoctors: DoctorProfile[] = [
     experience: 15,
     rating: 4.9,
     availableDays: ["Monday", "Tuesday", "Thursday", "Friday"],
+    availableHours: [
+      { 
+        day: "Monday", 
+        hours: [{ start: "09:00", end: "12:00" }, { start: "13:00", end: "17:00" }] 
+      },
+      { 
+        day: "Tuesday", 
+        hours: [{ start: "09:00", end: "14:00" }] 
+      },
+      { 
+        day: "Thursday", 
+        hours: [{ start: "10:00", end: "16:00" }] 
+      },
+      { 
+        day: "Friday", 
+        hours: [{ start: "09:00", end: "12:00" }] 
+      }
+    ],
     profileImage: "/placeholder.svg",
   },
   {
@@ -70,6 +89,20 @@ export const mockDoctors: DoctorProfile[] = [
     experience: 12,
     rating: 4.7,
     availableDays: ["Monday", "Wednesday", "Friday"],
+    availableHours: [
+      { 
+        day: "Monday", 
+        hours: [{ start: "08:00", end: "16:00" }] 
+      },
+      { 
+        day: "Wednesday", 
+        hours: [{ start: "10:00", end: "18:00" }] 
+      },
+      { 
+        day: "Friday", 
+        hours: [{ start: "08:00", end: "14:00" }] 
+      }
+    ],
     profileImage: "/placeholder.svg",
   },
   {
@@ -85,6 +118,20 @@ export const mockDoctors: DoctorProfile[] = [
     experience: 20,
     rating: 4.8,
     availableDays: ["Tuesday", "Thursday", "Saturday"],
+    availableHours: [
+      { 
+        day: "Tuesday", 
+        hours: [{ start: "09:00", end: "17:00" }] 
+      },
+      { 
+        day: "Thursday", 
+        hours: [{ start: "09:00", end: "17:00" }] 
+      },
+      { 
+        day: "Saturday", 
+        hours: [{ start: "10:00", end: "14:00" }] 
+      }
+    ],
     profileImage: "/placeholder.svg",
   },
 ];
@@ -207,6 +254,78 @@ export const mockDiagnosticFiles: DiagnosticFile[] = [
     fileName: "chest_xray.jpg",
     uploadDate: "2025-05-07T09:00:00Z",
     fileType: "image/jpeg"
+  },
+  {
+    id: "file4",
+    patientId: "patient1",
+    appointmentId: "appt1",
+    fileUrl: "/placeholder.svg",
+    fileName: "lab_results.pdf",
+    uploadDate: "2025-05-08T14:30:00Z",
+    fileType: "application/pdf"
+  },
+  {
+    id: "file5",
+    patientId: "patient1",
+    appointmentId: "appt1",
+    fileUrl: "/placeholder.svg",
+    fileName: "medication_report.docx",
+    uploadDate: "2025-05-09T09:15:00Z",
+    fileType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  }
+];
+
+// Mock Diagnosis Results
+export const mockDiagnosisResults: DiagnosisResult[] = [
+  {
+    id: "diag1",
+    appointmentId: "appt1",
+    patientId: "patient1",
+    doctorId: "doctor1",
+    date: "2025-05-15T11:30:00Z",
+    result: "Early stage glioma detected in frontal lobe",
+    predictionScore: 0.85,
+    treatmentPlan: "Recommend surgical resection followed by targeted radiation therapy. Monitor with MRI every 3 months.",
+    followUpDate: "2025-05-30T10:00:00Z",
+    reviewedByDoctor: true
+  },
+  {
+    id: "diag2",
+    appointmentId: "appt2",
+    patientId: "patient1",
+    doctorId: "doctor2",
+    date: "2025-05-10T15:00:00Z",
+    result: "Benign melanocytic nevus - no evidence of malignancy",
+    predictionScore: 0.92,
+    treatmentPlan: "No treatment required. Continue regular skin examinations every 6 months.",
+    followUpDate: "2025-11-10T14:00:00Z",
+    reviewedByDoctor: true
+  }
+];
+
+// Mock Medical Records
+export const mockMedicalRecords: MedicalRecord[] = [
+  {
+    id: "record1",
+    patientId: "patient1",
+    doctorId: "doctor1",
+    createdAt: "2025-05-15T11:45:00Z",
+    updatedAt: "2025-05-15T11:45:00Z",
+    diagnoses: [mockDiagnosisResults[0]],
+    files: [mockDiagnosticFiles[0], mockDiagnosticFiles[3], mockDiagnosticFiles[4]],
+    treatmentNotes: "Patient showing good response to initial consultation. Scheduled for further tests to confirm diagnosis.",
+    appointmentSummary: "Initial consultation for recurring headaches. Brain scan shows early signs of glioma in frontal lobe. Patient to return for follow-up after additional tests."
+  },
+  {
+    id: "record2",
+    patientId: "patient1",
+    doctorId: "doctor2",
+    createdAt: "2025-05-10T15:15:00Z",
+    updatedAt: "2025-05-10T15:15:00Z",
+    diagnoses: [mockDiagnosisResults[1]],
+    files: [mockDiagnosticFiles[1]],
+    treatmentNotes: "Suspicious mole on upper back appears benign. Took biopsy for confirmation.",
+    appointmentSummary: "Follow-up on suspicious mole. Biopsy results show benign melanocytic nevus with no signs of malignancy. Regular monitoring recommended."
   }
 ];
 

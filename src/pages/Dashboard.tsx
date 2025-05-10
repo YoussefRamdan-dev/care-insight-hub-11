@@ -3,14 +3,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { mockAppointments, mockDoctors, mockPatients } from '../data/mockData';
-import { Appointment, DoctorProfile, PatientProfile } from '../types';
+import { mockAppointments, mockDoctors, mockPatients, mockDiagnosticFiles } from '../data/mockData';
+import { Appointment, DoctorProfile, PatientProfile, DiagnosticFile } from '../types';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import UpcomingAppointments from '@/components/dashboard/UpcomingAppointments';
 import ConnectedUsers from '@/components/dashboard/ConnectedUsers';
 import AIChatAssistant from '@/components/chat/AIChatAssistant';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import { FileText } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -19,6 +21,7 @@ const Dashboard = () => {
   const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
   const [connectedUsers, setConnectedUsers] = useState<(DoctorProfile | PatientProfile)[]>([]);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [patientFiles, setPatientFiles] = useState<DiagnosticFile[]>([]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -54,6 +57,10 @@ const Dashboard = () => {
         return userAppointments.some((appt) => appt.doctorId === doctor.id);
       });
       setConnectedUsers(patientDoctors);
+      
+      // Get patient files
+      const files = mockDiagnosticFiles.filter(file => file.patientId === currentUser.id);
+      setPatientFiles(files);
     } else if (currentUser.role === 'doctor') {
       const doctorPatients = mockPatients.filter((patient) => {
         return userAppointments.some((appt) => appt.patientId === patient.id);
@@ -133,6 +140,44 @@ const Dashboard = () => {
                 currentUserRole={currentUser.role} 
               />
             </div>
+
+            {/* Recent Files */}
+            {currentUser.role === 'patient' && patientFiles.length > 0 && (
+              <Card className="mt-6">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-md font-medium">Recent Files</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-sm font-medium"
+                    onClick={() => navigate('/medical-records')}
+                  >
+                    View All Files
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {patientFiles.slice(0, 3).map((file) => (
+                      <div 
+                        key={file.id} 
+                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+                      >
+                        <div className="flex items-center">
+                          <FileText className="h-9 w-9 p-2 rounded bg-gray-100 text-gray-700 mr-3" />
+                          <div>
+                            <p className="text-sm font-medium">{file.fileName}</p>
+                            <p className="text-xs text-gray-500">{formatDate(file.uploadDate)}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {file.fileType.split('/')[0]}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div>
@@ -140,7 +185,17 @@ const Dashboard = () => {
             {currentUser.role === 'patient' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Medical Summary</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Medical Summary</CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-sm font-medium"
+                      onClick={() => navigate('/medical-records')}
+                    >
+                      View Records
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -178,15 +233,40 @@ const Dashboard = () => {
                         <p className="text-gray-600">None reported</p>
                       )}
                     </div>
-                    
-                    <div className="pt-2">
-                      <button 
-                        onClick={() => navigate('/medical-records')}
-                        className="text-primary hover:underline text-sm font-medium"
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Patient list for doctors */}
+            {currentUser.role === 'doctor' && connectedUsers.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Patients</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {connectedUsers.slice(0, 5).map((patient) => (
+                      <div 
+                        key={patient.id} 
+                        className="flex items-center justify-between p-3 hover:bg-gray-50 rounded cursor-pointer"
+                        onClick={() => navigate(`/patient-files/${patient.id}`)}
                       >
-                        View Full Medical Records →
-                      </button>
-                    </div>
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                            <span className="font-medium text-gray-700">
+                              {patient.name.charAt(0)}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium">{patient.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {(patient as PatientProfile).medicalCondition || 'No conditions noted'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -194,7 +274,7 @@ const Dashboard = () => {
 
             {/* AI Assistant for doctors only */}
             {currentUser.role === 'doctor' && (
-              <Card>
+              <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>AI Assistant</CardTitle>
                 </CardHeader>
