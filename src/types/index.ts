@@ -32,6 +32,10 @@ export interface DoctorProfile extends User {
   experience?: number; // in years
   rating?: number;
   availableDays?: string[];
+  availableHours?: {
+    day: string;
+    hours: { start: string; end: string }[];
+  }[];
   role: 'doctor';
 }
 
@@ -83,7 +87,8 @@ export interface Message {
   content: string;
   timestamp: string; // ISO string
   read: boolean;
-  appointmentId?: string; // Made optional to fix the error
+  appointmentId?: string;
+  attachments?: DiagnosticFile[];
 }
 
 export interface DiagnosisResult {
@@ -96,4 +101,26 @@ export interface DiagnosisResult {
   predictionScore?: number;
   treatmentPlan?: string;
   followUpDate?: string; // ISO string
+  reviewedByDoctor: boolean;
+}
+
+export interface MedicalRecord {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+  diagnoses: DiagnosisResult[];
+  files: DiagnosticFile[];
+  treatmentNotes?: string;
+  appointmentSummary?: string;
+}
+
+export interface LabBooking {
+  id: string;
+  patientId: string;
+  laboratoryId: string;
+  serviceId: string;
+  date: string; // ISO string
+  status: 'scheduled' | 'completed' | 'cancelled';
 }

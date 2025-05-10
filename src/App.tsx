@@ -19,6 +19,9 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Messages from "./pages/Messages";
 import Laboratories from "./pages/Laboratories";
+import HealthTools from "./pages/HealthTools";
+import MedicalRecords from "./pages/MedicalRecords";
+import PatientFiles from "./pages/PatientFiles";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +46,9 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/laboratories" element={<Laboratories />} />
+            <Route path="/health-tools" element={<HealthTools />} />
+            <Route path="/medical-records" element={<MedicalRecords />} />
+            <Route path="/patient-files/:patientId" element={<PatientFiles />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
