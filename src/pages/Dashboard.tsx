@@ -10,6 +10,7 @@ import UpcomingAppointments from '@/components/dashboard/UpcomingAppointments';
 import ConnectedUsers from '@/components/dashboard/ConnectedUsers';
 import AIChatAssistant from '@/components/chat/AIChatAssistant';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -135,33 +136,89 @@ const Dashboard = () => {
           </div>
 
           <div>
-            {/* AI Assistant for doctors, option to chat with AI for patients */}
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Assistant</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {showAIAssistant ? (
-                  <div className="h-[400px]">
-                    <AIChatAssistant forDoctors={currentUser.role === 'doctor'} />
+            {/* Patient Medical Summary */}
+            {currentUser.role === 'patient' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Medical Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Blood Type</h3>
+                      <p className="text-lg font-semibold">
+                        {(currentUser as PatientProfile).bloodType || 'Not recorded'}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Medications</h3>
+                      {(currentUser as PatientProfile).medications && 
+                       (currentUser as PatientProfile).medications!.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {(currentUser as PatientProfile).medications!.map((med, index) => (
+                            <Badge key={index} variant="outline">{med}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600">No medications recorded</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Chronic Diseases</h3>
+                      {(currentUser as PatientProfile).chronicDiseases && 
+                       (currentUser as PatientProfile).chronicDiseases!.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {(currentUser as PatientProfile).chronicDiseases!.map((disease, index) => (
+                            <Badge key={index} variant="secondary">{disease}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600">None reported</p>
+                      )}
+                    </div>
+                    
+                    <div className="pt-2">
+                      <button 
+                        onClick={() => navigate('/medical-records')}
+                        className="text-primary hover:underline text-sm font-medium"
+                      >
+                        View Full Medical Records →
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-8 space-y-4">
-                    <p>
-                      {currentUser.role === 'doctor'
-                        ? 'Get help with patient summaries, appointment scheduling, and message drafting.'
-                        : 'Get help with medical questions, appointment booking, and more.'}
-                    </p>
-                    <button
-                      onClick={() => setShowAIAssistant(true)}
-                      className="inline-flex items-center px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
-                    >
-                      Chat with AI Assistant
-                    </button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* AI Assistant for doctors only */}
+            {currentUser.role === 'doctor' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Assistant</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {showAIAssistant ? (
+                    <div className="h-[400px]">
+                      <AIChatAssistant forDoctors={true} />
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 space-y-4">
+                      <p>
+                        Get help with patient summaries, appointment scheduling, and message drafting.
+                      </p>
+                      <button
+                        onClick={() => setShowAIAssistant(true)}
+                        className="inline-flex items-center px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+                      >
+                        Chat with AI Assistant
+                      </button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

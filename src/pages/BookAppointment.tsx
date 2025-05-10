@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from '@/components/ui/badge';
 
 const BookAppointment = () => {
   const { doctorId } = useParams<{ doctorId: string }>();
@@ -28,6 +29,7 @@ const BookAppointment = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [reason, setReason] = useState<string>("");
 
   useEffect(() => {
     if (!doctorId) return;
@@ -46,17 +48,50 @@ const BookAppointment = () => {
       
       // Check if doctor is available on this day
       if (doctor.availableDays?.includes(dayOfWeek)) {
-        // Generate time slots from 9:00 AM to 5:00 PM at 30 minute intervals
-        const times = [];
-        const startHour = 9;
-        const endHour = 17;
+        // Find available hours for this day
+        const daySchedule = doctor.availableHours?.find(schedule => schedule.day === dayOfWeek);
         
-        for (let hour = startHour; hour < endHour; hour++) {
-          times.push(`${hour}:00`);
-          times.push(`${hour}:30`);
+        if (daySchedule && daySchedule.hours.length > 0) {
+          // Generate time slots based on doctor's available hours
+          const times: string[] = [];
+          
+          daySchedule.hours.forEach(hourRange => {
+            const [startHour, startMinute] = hourRange.start.split(':').map(Number);
+            const [endHour, endMinute] = hourRange.end.split(':').map(Number);
+            
+            // Generate 30-minute slots
+            let currentHour = startHour;
+            let currentMinute = startMinute;
+            
+            while (
+              currentHour < endHour || 
+              (currentHour === endHour && currentMinute < endMinute)
+            ) {
+              times.push(`${currentHour}:${currentMinute === 0 ? '00' : currentMinute}`);
+              
+              // Advance by 30 minutes
+              currentMinute += 30;
+              if (currentMinute >= 60) {
+                currentHour += 1;
+                currentMinute = 0;
+              }
+            }
+          });
+          
+          setAvailableTimes(times);
+        } else {
+          // Use default schedule for demonstration purposes
+          const times = [];
+          const startHour = 9;
+          const endHour = 17;
+          
+          for (let hour = startHour; hour < endHour; hour++) {
+            times.push(`${hour}:00`);
+            times.push(`${hour}:30`);
+          }
+          
+          setAvailableTimes(times);
         }
-        
-        setAvailableTimes(times);
       } else {
         setAvailableTimes([]);
         toast({
@@ -75,10 +110,10 @@ const BookAppointment = () => {
       return;
     }
 
-    if (!selectedDate || !selectedTime) {
+    if (!selectedDate || !selectedTime || !reason) {
       toast({
         title: "Incomplete Information",
-        description: "Please select both a date and time for your appointment.",
+        description: "Please select a date, time, and reason for your appointment.",
         variant: "destructive",
       });
       return;
@@ -87,7 +122,7 @@ const BookAppointment = () => {
     // In a real app, this would create an appointment in the database
     toast({
       title: "Appointment Booked Successfully",
-      description: `Your appointment with Dr. ${doctor?.name} has been scheduled for ${selectedDate.toLocaleDateString()} at ${selectedTime}.`,
+      description: `Your appointment with Dr. ${doctor?.name} has been scheduled for ${selectedDate.toLocaleDateString()} at ${formatTime(selectedTime)}.`,
     });
     
     navigate('/dashboard');
@@ -154,12 +189,12 @@ const BookAppointment = () => {
                   <h3 className="font-medium mb-1">Available Days</h3>
                   <div className="flex flex-wrap gap-2">
                     {doctor.availableDays?.map((day, index) => (
-                      <span 
+                      <Badge 
                         key={index} 
-                        className="text-xs px-3 py-1 bg-primary-light text-primary-dark rounded-full"
+                        className="text-xs px-3 py-1 bg-primary-light text-primary-dark"
                       >
                         {day}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -237,7 +272,7 @@ const BookAppointment = () => {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-medium mb-2">Reason for Visit</h3>
-                    <Select>
+                    <Select value={reason} onValueChange={setReason}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select reason" />
                       </SelectTrigger>
@@ -264,7 +299,7 @@ const BookAppointment = () => {
                   <Button 
                     className="w-full bg-primary hover:bg-primary-dark text-white"
                     onClick={handleBookAppointment}
-                    disabled={!selectedDate || !selectedTime}
+                    disabled={!selectedDate || !selectedTime || !reason}
                   >
                     Confirm Appointment
                   </Button>

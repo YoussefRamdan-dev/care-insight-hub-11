@@ -55,6 +55,7 @@ export interface Appointment {
   notes?: string;
   requiredFiles?: string[];
   specialty: string;
+  reason?: string;
 }
 
 export interface DiagnosticFile {
@@ -123,4 +124,13 @@ export interface LabBooking {
   serviceId: string;
   date: string; // ISO string
   status: 'scheduled' | 'completed' | 'cancelled';
+}
+
+export interface DoctorSchedule {
+  doctorId: string;
+  availableDays: string[];
+  availableHours: {
+    day: string;
+    hours: { start: string; end: string }[];
+  }[];
 }

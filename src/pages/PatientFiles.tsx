@@ -1,560 +1,531 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from '../components/layout/DashboardLayout';
-import { useAuth } from '../contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { 
-  ArrowLeft, UserRound, FileText, Calendar, MessageSquare, 
-  Upload, AlertTriangle, CheckCircle, Brain, FileBarChart2 
-} from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { mockPatients } from '@/data/mockData';
+import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { mockPatients, mockDiagnosticFiles } from '@/data/mockData';
 import { PatientProfile, DiagnosticFile, DiagnosisResult } from '@/types';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { 
+  FileText, User, Clock, Calendar, 
+  UploadCloud, Download, Plus, X, 
+  AlertCircle, CheckCircle, Bot
+} from 'lucide-react';
+import AIChatAssistant from '@/components/chat/AIChatAssistant';
 
-// Mock data for patient files and diagnosis
-const mockFiles: DiagnosticFile[] = [
+const mockDiagnosisResults: DiagnosisResult[] = [
   {
-    id: 'file-1',
+    id: 'diag1',
+    appointmentId: 'app1',
     patientId: 'patient-1',
-    appointmentId: 'appt-1',
-    fileUrl: '/placeholder.svg',
-    fileName: 'brain_scan_1.jpg',
-    uploadDate: '2023-05-15T10:30:00Z',
-    fileType: 'image/jpeg'
+    doctorId: 'doctor-1',
+    date: new Date().toISOString(),
+    result: 'Suspected early-stage melanoma',
+    predictionScore: 0.87,
+    treatmentPlan: 'Surgical excision recommended, followed by regular follow-ups and preventive measures.',
+    followUpDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    reviewedByDoctor: true
   },
   {
-    id: 'file-2',
+    id: 'diag2',
+    appointmentId: 'app2',
     patientId: 'patient-1',
-    appointmentId: 'appt-1',
-    fileUrl: '/placeholder.svg',
-    fileName: 'brain_scan_2.jpg',
-    uploadDate: '2023-05-15T10:31:00Z',
-    fileType: 'image/jpeg'
-  },
-  {
-    id: 'file-3',
-    patientId: 'patient-1',
-    appointmentId: 'appt-1',
-    fileUrl: '/placeholder.svg',
-    fileName: 'lab_results.pdf',
-    uploadDate: '2023-05-14T09:15:00Z',
-    fileType: 'application/pdf'
+    doctorId: 'doctor-1',
+    date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    result: 'Benign skin lesion',
+    predictionScore: 0.95,
+    treatmentPlan: 'No treatment required. Continue regular skin checks.',
+    followUpDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    reviewedByDoctor: true
   }
 ];
 
-const mockDiagnosis: DiagnosisResult = {
-  id: 'diag-1',
-  appointmentId: 'appt-1',
-  patientId: 'patient-1',
-  doctorId: 'doctor-1',
-  date: '2023-05-16T11:30:00Z',
-  result: 'No significant abnormalities detected in the brain scan.',
-  predictionScore: 0.92,
-  treatmentPlan: '',
-  followUpDate: '',
-  reviewedByDoctor: false
-};
-
-const PatientFiles = () => {
-  const { patientId } = useParams();
-  const navigate = useNavigate();
+export default function PatientFiles() {
+  const { patientId } = useParams<{ patientId: string }>();
   const { currentUser } = useAuth();
-  const { toast } = useToast();
-  
   const [patient, setPatient] = useState<PatientProfile | null>(null);
   const [files, setFiles] = useState<DiagnosticFile[]>([]);
-  const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null);
-  const [treatmentPlan, setTreatmentPlan] = useState('');
-  const [followUpDate, setFollowUpDate] = useState('');
-  const [diagnosisReviewed, setDiagnosisReviewed] = useState(false);
-  
-  // AI diagnosis states
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showAiDiagnosis, setShowAiDiagnosis] = useState(false);
-  
+  const [diagnoses, setDiagnoses] = useState<DiagnosisResult[]>([]);
+  const [selectedFile, setSelectedFile] = useState<DiagnosticFile | null>(null);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [newNote, setNewNote] = useState('');
+  const [activeTab, setActiveTab] = useState('files');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
-    // In a real app, these would be API calls
-    if (patientId) {
-      const foundPatient = mockPatients.find(p => p.id === patientId);
-      if (foundPatient) {
-        setPatient(foundPatient as PatientProfile);
-      }
-      
-      // Load patient files
-      setFiles(mockFiles.filter(file => file.patientId === patientId));
-      
-      // Check if diagnosis exists
-      if (mockDiagnosis.patientId === patientId) {
-        setDiagnosis(mockDiagnosis);
-        setDiagnosisReviewed(mockDiagnosis.reviewedByDoctor);
-      }
+    if (!patientId) return;
+    
+    // Find patient by ID
+    const foundPatient = mockPatients.find(p => p.id === patientId);
+    if (foundPatient) {
+      setPatient(foundPatient as PatientProfile);
     }
-  }, [patientId]);
-  
-  if (!currentUser || currentUser.role !== 'doctor') {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <p>Access restricted. Only doctors can view patient files.</p>
-        </div>
-      </DashboardLayout>
+
+    // Get patient files
+    const patientFiles = mockDiagnosticFiles.filter(file => file.patientId === patientId);
+    setFiles(patientFiles);
+
+    // Get diagnosis results
+    const patientDiagnoses = mockDiagnosisResults.filter(
+      diagnosis => diagnosis.patientId === patientId
     );
-  }
-  
+    setDiagnoses(patientDiagnoses);
+  }, [patientId]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
+    
+    setIsUploading(true);
+    
+    // Simulate upload delay
+    setTimeout(() => {
+      // Create new diagnostic file(s)
+      const newFiles: DiagnosticFile[] = Array.from(selectedFiles).map((file, index) => ({
+        id: `file-${Date.now()}-${index}`,
+        patientId: patientId || '',
+        appointmentId: 'current-appointment',
+        fileUrl: URL.createObjectURL(file),
+        fileName: file.name,
+        uploadDate: new Date().toISOString(),
+        fileType: file.type
+      }));
+      
+      // Add to files list
+      setFiles(prev => [...prev, ...newFiles]);
+      setIsUploading(false);
+    }, 1500);
+  };
+
+  const handleRequestFiles = () => {
+    // In a real implementation, this would send a notification to the patient
+    alert('File request has been sent to the patient.');
+  };
+
+  const handleDeleteFile = (fileId: string) => {
+    setFiles(prev => prev.filter(file => file.id !== fileId));
+    if (selectedFile?.id === fileId) {
+      setSelectedFile(null);
+    }
+  };
+
+  const handleSelectFile = (file: DiagnosticFile) => {
+    setSelectedFile(file);
+  };
+
+  const handleAddDiagnosis = () => {
+    const newDiagnosis: DiagnosisResult = {
+      id: `diag-${Date.now()}`,
+      appointmentId: 'current-appointment',
+      patientId: patientId || '',
+      doctorId: currentUser?.id || '',
+      date: new Date().toISOString(),
+      result: 'Pending AI Analysis',
+      predictionScore: undefined,
+      treatmentPlan: '',
+      reviewedByDoctor: false
+    };
+    
+    setDiagnoses(prev => [...prev, newDiagnosis]);
+    setActiveTab('diagnosis');
+    setShowAIAssistant(true);
+  };
+
+  const handleAddNote = () => {
+    if (!newNote.trim()) return;
+    
+    // In a real implementation, this would save the note to the database
+    setNewNote('');
+    alert('Note has been added to the patient record.');
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   if (!patient) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <p>Patient not found</p>
+          <p>Patient not found or you don't have permission to view this record.</p>
         </div>
       </DashboardLayout>
     );
   }
-  
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric'
-    });
-  };
-  
-  const handleRunAiDiagnosis = () => {
-    // Simulate AI analysis
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setShowAiDiagnosis(true);
-      
-      toast({
-        title: "AI Analysis Complete",
-        description: "The diagnostic images have been successfully analyzed.",
-      });
-    }, 3000);
-  };
-  
-  const handleSubmitReview = () => {
-    if (!treatmentPlan) {
-      toast({
-        title: "Treatment Plan Required",
-        description: "Please provide a treatment plan before submitting your review.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Update the diagnosis with doctor's review
-    if (diagnosis) {
-      const updatedDiagnosis = {
-        ...diagnosis,
-        treatmentPlan,
-        followUpDate: followUpDate || undefined,
-        reviewedByDoctor: true
-      };
-      setDiagnosis(updatedDiagnosis);
-      setDiagnosisReviewed(true);
-      
-      toast({
-        title: "Review Submitted",
-        description: "Your review and treatment plan have been saved.",
-      });
-    }
-  };
-  
-  const handleSendToPatient = () => {
-    toast({
-      title: "Sent to Patient",
-      description: "The diagnosis and treatment plan have been sent to the patient.",
-    });
-    
-    // In a real app, this would trigger a notification to the patient
-  };
-  
+
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <div className="flex items-center">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mr-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Patient Files</h1>
-            <p className="text-gray-600">
-              View and manage medical files for {patient.name}
-            </p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Patient Files</h1>
+          <div className="flex gap-2">
+            <Button onClick={handleRequestFiles} variant="outline">
+              Request Files
+            </Button>
+            <div className="relative">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
+                multiple
+              />
+              <Button onClick={handleUploadClick}>
+                <UploadCloud className="mr-2 h-4 w-4" />
+                Upload Files
+              </Button>
+            </div>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <UserRound className="h-5 w-5 mr-2" />
-                Patient Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-center mb-4">
-                  {patient.profileImage ? (
-                    <img 
-                      src={patient.profileImage} 
-                      alt={patient.name} 
-                      className="h-24 w-24 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center">
-                      <UserRound className="h-12 w-12 text-gray-500" />
-                    </div>
-                  )}
-                </div>
-                
+        
+        {/* Patient Info Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col items-center md:items-start">
+                <Avatar className="h-20 w-20 bg-primary-light">
+                  <User className="h-10 w-10 text-primary-dark" />
+                </Avatar>
+                <h2 className="text-xl font-bold mt-2">{patient.name}</h2>
+                <p className="text-sm text-gray-500">Patient ID: {patient.id}</p>
+              </div>
+              
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <h3 className="text-lg font-medium">{patient.name}</h3>
-                  <p className="text-gray-500 text-sm">{patient.email}</p>
+                  <p className="text-sm text-gray-500">Blood Type</p>
+                  <p className="font-medium">{patient.bloodType || 'Not recorded'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Age</p>
+                  <p className="font-medium">{patient.age || 'Not recorded'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Gender</p>
+                  <p className="font-medium capitalize">{patient.gender || 'Not recorded'}</p>
                 </div>
                 
-                <div className="pt-4 border-t space-y-2">
-                  {patient.age && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 text-sm">Age</span>
-                      <span className="font-medium text-sm">{patient.age} years</span>
-                    </div>
-                  )}
-                  
-                  {patient.gender && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 text-sm">Gender</span>
-                      <span className="font-medium text-sm">{patient.gender}</span>
-                    </div>
-                  )}
-                  
-                  {patient.bloodType && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 text-sm">Blood Type</span>
-                      <span className="font-medium text-sm">{patient.bloodType}</span>
-                    </div>
-                  )}
+                <div className="md:col-span-3">
+                  <p className="text-sm text-gray-500 mb-1">Medications</p>
+                  <div className="flex flex-wrap gap-2">
+                    {patient.medications && patient.medications.length > 0 ? (
+                      patient.medications.map((med, i) => (
+                        <Badge key={i} variant="outline">{med}</Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No medications recorded</p>
+                    )}
+                  </div>
                 </div>
                 
-                {patient.medications && patient.medications.length > 0 && (
-                  <div className="pt-4 border-t">
-                    <h4 className="text-sm font-medium mb-2">Current Medications</h4>
-                    <ul className="list-disc pl-5 text-sm space-y-1">
-                      {patient.medications.map((med, i) => (
-                        <li key={i} className="text-gray-700">{med}</li>
-                      ))}
-                    </ul>
+                <div className="md:col-span-3">
+                  <p className="text-sm text-gray-500 mb-1">Chronic Diseases</p>
+                  <div className="flex flex-wrap gap-2">
+                    {patient.chronicDiseases && patient.chronicDiseases.length > 0 ? (
+                      patient.chronicDiseases.map((disease, i) => (
+                        <Badge key={i} variant="secondary">{disease}</Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No chronic diseases recorded</p>
+                    )}
                   </div>
-                )}
-                
-                {patient.chronicDiseases && patient.chronicDiseases.length > 0 && (
-                  <div className="pt-4 border-t">
-                    <h4 className="text-sm font-medium mb-2">Chronic Conditions</h4>
-                    <ul className="list-disc pl-5 text-sm space-y-1">
-                      {patient.chronicDiseases.map((disease, i) => (
-                        <li key={i} className="text-gray-700">{disease}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                <div className="flex space-x-2 pt-4">
-                  <Button size="sm" variant="outline" className="flex-1">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule
-                  </Button>
-                  <Button size="sm" variant="outline" className="flex-1">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Tabs for Files, Diagnosis, Notes */}
+        <Tabs defaultValue="files" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="diagnosis">Diagnosis</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+          </TabsList>
           
-          <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue="diagnostic-files" className="w-full">
-              <TabsList className="mb-6">
-                <TabsTrigger value="diagnostic-files">Diagnostic Files</TabsTrigger>
-                <TabsTrigger value="ai-diagnosis">AI Diagnosis</TabsTrigger>
-                <TabsTrigger value="treatment-plan">Treatment Plan</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="diagnostic-files">
-                <Card>
+          {/* Files Tab */}
+          <TabsContent value="files" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <Card className="h-full">
                   <CardHeader>
-                    <CardTitle>Medical Files</CardTitle>
+                    <CardTitle className="text-lg">File List</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {files.length > 0 ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {files.filter(file => file.fileType.startsWith('image/')).map(file => (
-                            <div key={file.id} className="border rounded-lg overflow-hidden">
-                              <div className="h-40 bg-gray-100 flex items-center justify-center overflow-hidden">
-                                <img
-                                  src={file.fileUrl}
-                                  alt={file.fileName}
-                                  className="w-full h-full object-contain"
-                                />
-                              </div>
-                              <div className="p-3">
-                                <p className="font-medium text-sm">{file.fileName}</p>
-                                <p className="text-xs text-gray-500">Uploaded on {formatDate(file.uploadDate)}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <div className="border-t pt-4 mt-4">
-                          <h3 className="text-sm font-medium mb-3">Other Files</h3>
-                          {files.filter(file => !file.fileType.startsWith('image/')).map(file => (
-                            <div key={file.id} className="flex items-center justify-between p-3 border rounded-md mb-2">
-                              <div className="flex items-center">
-                                <FileText className="h-8 w-8 mr-3 text-gray-400" />
-                                <div>
-                                  <p className="font-medium text-sm">{file.fileName}</p>
-                                  <p className="text-xs text-gray-500">{formatDate(file.uploadDate)}</p>
-                                </div>
-                              </div>
-                              <Button size="sm" variant="outline">Download</Button>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <div className="mt-6">
-                          <Button>
-                            <Upload className="h-4 w-4 mr-2" />
-                            Upload New Files
-                          </Button>
-                        </div>
+                    {files.length === 0 ? (
+                      <div className="text-center py-8">
+                        <FileText className="mx-auto h-10 w-10 text-gray-400" />
+                        <p className="mt-2 text-gray-500">No files uploaded</p>
                       </div>
                     ) : (
-                      <div className="text-center py-10">
-                        <FileText className="h-12 w-12 mx-auto text-gray-300" />
-                        <p className="mt-2 text-gray-600">No medical files available</p>
-                        <Button className="mt-4">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Files
-                        </Button>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {files.map((file) => (
+                          <div 
+                            key={file.id}
+                            onClick={() => handleSelectFile(file)}
+                            className={`p-3 border rounded-md cursor-pointer flex items-center justify-between hover:bg-gray-50 ${selectedFile?.id === file.id ? 'border-primary bg-primary-light bg-opacity-10' : ''}`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-5 w-5 text-gray-500" />
+                              <div>
+                                <p className="font-medium text-sm truncate max-w-[150px]">
+                                  {file.fileName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {formatDate(file.uploadDate)}
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteFile(file.id);
+                              }}
+                            >
+                              <X className="h-4 w-4 text-gray-500" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {isUploading && (
+                      <div className="mt-4 p-3 border rounded-md bg-gray-50">
+                        <div className="flex items-center space-x-3">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          <p className="text-sm">Uploading files...</p>
+                        </div>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
               
-              <TabsContent value="ai-diagnosis">
-                <Card>
+              <div className="md:col-span-2">
+                <Card className="h-full">
                   <CardHeader>
-                    <CardTitle>AI Diagnostic Tool</CardTitle>
+                    <CardTitle className="text-lg">File Preview</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {!showAiDiagnosis ? (
-                      <div className="space-y-6">
-                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start">
-                          <Brain className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
-                          <div className="text-sm text-blue-700">
-                            <p className="font-medium">AI Diagnostic Assistant</p>
-                            <p className="mt-1">Upload brain, skin, or breast cancer diagnostic images to get AI-powered analysis. The model will provide preliminary findings to assist your diagnosis.</p>
-                          </div>
-                        </div>
-                        
-                        {files.length > 0 ? (
+                    {selectedFile ? (
+                      <div className="space-y-4">
+                        <div className="flex justify-between">
                           <div>
-                            <h3 className="text-sm font-medium mb-3">Select files for AI analysis</h3>
-                            <div className="space-y-2">
-                              {files.filter(file => file.fileType.startsWith('image/')).map(file => (
-                                <div key={file.id} className="flex items-center p-3 border rounded-md">
-                                  <input 
-                                    type="checkbox" 
-                                    id={`file-${file.id}`} 
-                                    className="mr-3 h-4 w-4 text-primary" 
-                                  />
-                                  <label htmlFor={`file-${file.id}`} className="flex items-center flex-1 cursor-pointer">
-                                    <img 
-                                      src={file.fileUrl} 
-                                      alt={file.fileName} 
-                                      className="w-12 h-12 object-cover mr-3 rounded" 
-                                    />
-                                    <span className="text-sm">{file.fileName}</span>
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            <div className="mt-6">
-                              <Button 
-                                onClick={handleRunAiDiagnosis}
-                                disabled={isAnalyzing}
-                              >
-                                {isAnalyzing ? (
-                                  <>Analyzing Files...</>
-                                ) : (
-                                  <>
-                                    <Brain className="h-4 w-4 mr-2" />
-                                    Run AI Diagnosis
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-10">
-                            <AlertTriangle className="h-12 w-12 mx-auto text-gray-300" />
-                            <p className="mt-2 text-gray-600">No diagnostic images available for AI analysis</p>
-                            <p className="text-sm text-gray-500 mt-1">Upload images in the Diagnostic Files tab</p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        <div className="bg-green-50 border border-green-100 rounded-lg p-4 flex items-start">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
-                          <div className="text-sm text-green-700">
-                            <p className="font-medium">AI Analysis Complete</p>
-                            <p className="mt-1">The diagnostic images have been successfully analyzed. Please review the findings below.</p>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <div>
-                            <h3 className="text-lg font-medium">AI Diagnostic Results</h3>
-                            <div className="flex items-center mt-1">
-                              <FileBarChart2 className="h-4 w-4 text-gray-500 mr-1" />
-                              <span className="text-sm text-gray-500">
-                                Analyzed on {formatDate(new Date().toISOString())}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="border-t pt-4">
-                            <h4 className="font-medium">Assessment</h4>
-                            <p className="mt-2 text-gray-700">{diagnosis?.result}</p>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <div className="flex-1">
-                              <div className="flex justify-between items-center text-sm mb-1">
-                                <span>AI Confidence Level</span>
-                                <span className="font-medium">{diagnosis?.predictionScore ? Math.round(diagnosis.predictionScore * 100) : 0}%</span>
-                              </div>
-                              <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-primary"
-                                  style={{ width: `${diagnosis?.predictionScore ? diagnosis.predictionScore * 100 : 0}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="border-t pt-4">
-                            <h4 className="font-medium">AI Interpretation</h4>
-                            <p className="mt-2 text-gray-700">
-                              Based on the provided images, the AI model has not detected significant abnormalities that would indicate cancer. 
-                              The anatomical structures appear normal with no signs of lesions, masses, or irregular tissue growth.
+                            <h3 className="font-medium">{selectedFile.fileName}</h3>
+                            <p className="text-sm text-gray-500">
+                              Uploaded on {formatDate(selectedFile.uploadDate)}
                             </p>
                           </div>
-                        </div>
-                        
-                        <div className="pt-6">
-                          <Button onClick={() => setShowAiDiagnosis(false)} variant="outline" className="mr-2">
-                            Run New Analysis
-                          </Button>
-                          <Button onClick={() => document.querySelector('[data-value="treatment-plan"]')?.click()}>
-                            Create Treatment Plan
+                          <Button variant="outline" size="sm">
+                            <Download className="mr-2 h-4 w-4" />
+                            Download
                           </Button>
                         </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="treatment-plan">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Treatment Plan & Doctor's Review</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {diagnosisReviewed ? (
-                      <div className="space-y-6">
-                        <div className="bg-green-50 border border-green-100 rounded-lg p-4 flex items-start">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
-                          <div className="text-sm text-green-700">
-                            <p className="font-medium">Review Complete</p>
-                            <p className="mt-1">Your review and treatment plan have been saved.</p>
-                          </div>
+                        
+                        <div className="bg-gray-50 border rounded-md min-h-[300px] flex items-center justify-center">
+                          {selectedFile.fileType.startsWith('image/') ? (
+                            <img 
+                              src={selectedFile.fileUrl} 
+                              alt={selectedFile.fileName} 
+                              className="max-h-[300px] object-contain" 
+                            />
+                          ) : (
+                            <div className="text-center p-4">
+                              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                              <p className="mt-2">{selectedFile.fileName}</p>
+                              <p className="text-sm text-gray-500">
+                                {selectedFile.fileType}
+                              </p>
+                            </div>
+                          )}
                         </div>
                         
-                        <div className="border-t pt-4">
-                          <h4 className="font-medium">Doctor's Assessment</h4>
-                          <p className="mt-2 text-gray-700">{diagnosis?.result}</p>
-                        </div>
-                        
-                        <div className="border-t pt-4">
-                          <h4 className="font-medium">Treatment Plan</h4>
-                          <p className="mt-2 text-gray-700">{diagnosis?.treatmentPlan}</p>
-                        </div>
-                        
-                        {diagnosis?.followUpDate && (
-                          <div className="border-t pt-4">
-                            <h4 className="font-medium">Follow-Up Date</h4>
-                            <p className="mt-2 text-gray-700">{formatDate(diagnosis.followUpDate)}</p>
-                          </div>
-                        )}
-                        
-                        <div className="pt-6">
-                          <Button onClick={handleSendToPatient}>
-                            Send to Patient
+                        <div className="flex justify-end space-x-2">
+                          <Button onClick={handleAddDiagnosis}>
+                            Run AI Diagnosis
                           </Button>
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-sm font-medium">Treatment Plan</h3>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Enter your professional assessment and recommended treatment
-                          </p>
-                          <Textarea 
-                            placeholder="Enter treatment plan here..." 
-                            className="mt-2"
-                            value={treatmentPlan}
-                            onChange={e => setTreatmentPlan(e.target.value)}
-                            rows={6}
-                          />
-                        </div>
-                        
-                        <div>
-                          <h3 className="text-sm font-medium">Follow-Up Appointment</h3>
-                          <input
-                            type="date"
-                            className="mt-2 w-full p-2 border rounded"
-                            value={followUpDate}
-                            onChange={e => setFollowUpDate(e.target.value)}
-                          />
-                        </div>
-                        
-                        <Button onClick={handleSubmitReview} className="w-full">
-                          Submit Review
-                        </Button>
+                      <div className="text-center py-16">
+                        <FileText className="mx-auto h-12 w-12 text-gray-300" />
+                        <p className="mt-2 text-gray-500">Select a file to preview</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Diagnosis Tab */}
+          <TabsContent value="diagnosis" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2 space-y-4">
+                {diagnoses.length > 0 ? (
+                  diagnoses.map((diagnosis) => (
+                    <Card key={diagnosis.id}>
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-medium">
+                              {diagnosis.result}
+                            </h3>
+                            <div className="flex items-center text-sm text-gray-500 mt-1">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              <span>{formatDate(diagnosis.date)}</span>
+                            </div>
+                          </div>
+                          <Badge 
+                            variant={diagnosis.reviewedByDoctor ? "default" : "outline"}
+                          >
+                            {diagnosis.reviewedByDoctor ? "Reviewed" : "Pending Review"}
+                          </Badge>
+                        </div>
+                        
+                        {diagnosis.predictionScore !== undefined && (
+                          <div className="mb-4">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-sm font-medium">AI Confidence</span>
+                              <span className="text-sm font-medium">
+                                {Math.round(diagnosis.predictionScore * 100)}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${diagnosis.predictionScore > 0.8 ? 'bg-red-500' : 'bg-amber-500'}`}
+                                style={{ width: `${diagnosis.predictionScore * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {diagnosis.treatmentPlan && (
+                          <div className="mb-4">
+                            <h4 className="font-medium mb-1">Treatment Plan</h4>
+                            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">
+                              {diagnosis.treatmentPlan}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {diagnosis.followUpDate && (
+                          <div className="flex items-center p-3 bg-primary-light bg-opacity-10 rounded-md">
+                            <Clock className="h-5 w-5 text-primary mr-2" />
+                            <div>
+                              <p className="text-sm font-medium">Follow-up</p>
+                              <p className="text-xs text-gray-600">{formatDate(diagnosis.followUpDate)}</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {!diagnosis.reviewedByDoctor && (
+                          <div className="mt-4 flex justify-end space-x-2">
+                            <Button variant="outline">Edit</Button>
+                            <Button>Mark as Reviewed</Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <AlertCircle className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                      <h3 className="font-medium">No Diagnosis Records</h3>
+                      <p className="text-gray-500">Select a file and run AI diagnosis to get started.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+              
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      AI Diagnosis Assistant
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {showAIAssistant ? (
+                      <div className="h-[400px]">
+                        <AIChatAssistant forDoctors={true} />
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 space-y-4">
+                        <Bot className="mx-auto h-12 w-12 text-gray-300" />
+                        <div>
+                          <p className="font-medium">AI Assistant</p>
+                          <p className="text-sm text-gray-500 mb-4">
+                            Get help with diagnosis and treatment recommendations
+                          </p>
+                          <Button onClick={() => setShowAIAssistant(true)}>
+                            Start AI Diagnosis
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Notes Tab */}
+          <TabsContent value="notes">
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="note">Add Doctor's Note</Label>
+                    <Textarea
+                      id="note"
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Add your notes about the patient's condition, treatment, or follow-up instructions..."
+                      className="min-h-[120px] mt-2"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button onClick={handleAddNote} disabled={!newNote.trim()}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Note
+                    </Button>
+                  </div>
+                  
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="font-medium mb-2">Previous Notes</h3>
+                    <div className="text-center py-8">
+                      <CheckCircle className="mx-auto h-10 w-10 text-gray-300" />
+                      <p className="mt-2 text-gray-500">No previous notes</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
-};
-
-export default PatientFiles;
+}

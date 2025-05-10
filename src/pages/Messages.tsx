@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { mockMessages, mockDoctors, mockPatients } from '@/data/mockData';
-import { Message, DoctorProfile, PatientProfile } from '@/types';
+import { Message, DoctorProfile, PatientProfile, DiagnosticFile } from '@/types';
 import ChatInterface from '@/components/chat/ChatInterface';
 import AIChatAssistant from '@/components/chat/AIChatAssistant';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -64,7 +64,7 @@ export default function Messages() {
     contact.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = (content: string, attachments?: DiagnosticFile[]) => {
     if (!currentUser || !selectedContact) return;
 
     const newMessage: Message = {
@@ -73,7 +73,8 @@ export default function Messages() {
       receiverId: selectedContact,
       content,
       timestamp: new Date().toISOString(),
-      read: false
+      read: false,
+      attachments
     };
 
     // Add new message to the list
@@ -104,7 +105,9 @@ export default function Messages() {
             <Tabs defaultValue="contacts" value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full mb-4">
                 <TabsTrigger value="contacts" className="flex-1">Contacts</TabsTrigger>
-                <TabsTrigger value="ai" className="flex-1">AI Assistant</TabsTrigger>
+                {currentUser.role === 'doctor' && (
+                  <TabsTrigger value="ai" className="flex-1">AI Assistant</TabsTrigger>
+                )}
               </TabsList>
               
               <TabsContent value="contacts" className="space-y-4">
@@ -161,9 +164,11 @@ export default function Messages() {
                 </Card>
               </TabsContent>
               
-              <TabsContent value="ai">
-                <AIChatAssistant forDoctors={currentUser.role === 'doctor'} />
-              </TabsContent>
+              {currentUser.role === 'doctor' && (
+                <TabsContent value="ai">
+                  <AIChatAssistant forDoctors={true} />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
           
