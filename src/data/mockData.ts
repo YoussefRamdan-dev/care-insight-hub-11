@@ -1,5 +1,4 @@
-
-import { PatientProfile, DoctorProfile, Specialty, Appointment, Laboratory } from "../types";
+import { PatientProfile, DoctorProfile, Specialty, Appointment, Laboratory, DiagnosticFile } from "../types";
 
 // Mock Patients
 export const mockPatients: PatientProfile[] = [
@@ -178,6 +177,37 @@ export const mockLaboratories: Laboratory[] = [
       { day: "Sunday", open: "10:00", close: "14:00" },
     ],
   },
+];
+
+// Mock Diagnostic Files
+export const mockDiagnosticFiles: DiagnosticFile[] = [
+  {
+    id: "file1",
+    patientId: "patient1",
+    appointmentId: "appt1",
+    fileUrl: "/placeholder.svg",
+    fileName: "brain_scan.png",
+    uploadDate: "2025-05-05T10:30:00Z",
+    fileType: "image/png"
+  },
+  {
+    id: "file2",
+    patientId: "patient1",
+    appointmentId: "appt2",
+    fileUrl: "/placeholder.svg",
+    fileName: "skin_biopsy.jpg",
+    uploadDate: "2025-05-06T14:00:00Z",
+    fileType: "image/jpeg"
+  },
+  {
+    id: "file3",
+    patientId: "patient2",
+    appointmentId: "appt3",
+    fileUrl: "/placeholder.svg",
+    fileName: "chest_xray.jpg",
+    uploadDate: "2025-05-07T09:00:00Z",
+    fileType: "image/jpeg"
+  }
 ];
 
 // Mock Messages
