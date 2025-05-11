@@ -25,6 +25,8 @@ import PatientFiles from "./pages/PatientFiles";
 import DoctorProfile from "./pages/DoctorProfile";
 import DoctorContributions from "./pages/DoctorContributions";
 import NotFound from "./pages/NotFound";
+import HealthyTalk from "./pages/HealthyTalk";
+import HealthPostDetail from "./pages/HealthPostDetail";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/patient-files/:patientId" element={<PatientFiles />} />
             <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
             <Route path="/doctor-contributions" element={<DoctorContributions />} />
+            <Route path="/healthy-talk" element={<HealthyTalk />} />
+            <Route path="/healthy-talk/:postId" element={<HealthPostDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

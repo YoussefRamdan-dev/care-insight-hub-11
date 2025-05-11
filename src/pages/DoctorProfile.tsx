@@ -1,88 +1,86 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Layout from '../components/layout/Layout';
-import { mockDoctors } from '../data/mockData';
-import { DoctorProfile as DoctorProfileType, Review } from '../types';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import Layout from "@/components/layout/Layout";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Star, 
-  MessageCircle, 
-  UserPlus, 
-  Calendar, 
-  MapPin, 
-  Phone, 
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Calendar,
+  Star,
+  MessageSquare,
+  Heart,
+  Clock,
+  MapPin,
+  Award,
+  BookOpen,
   Mail,
-  Clock
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import DoctorReviews from '@/components/doctor/DoctorReviews';
-import { Avatar } from '@/components/ui/avatar';
+} from "lucide-react";
+import DoctorReviews from "@/components/doctor/DoctorReviews";
+import { mockDoctors, mockAppointments } from "@/data/mockData";
+import { DoctorProfile as DoctorProfileType } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
-const DoctorProfilePage = () => {
-  const { doctorId } = useParams<{ doctorId: string }>();
-  const navigate = useNavigate();
+const DoctorProfile = () => {
+  const { doctorId } = useParams();
   const { currentUser } = useAuth();
-  const { toast } = useToast();
-  
-  const [doctor, setDoctor] = useState<DoctorProfileType | null>(null);
-  const [isFollowing, setIsFollowing] = useState(false);
-  
-  useEffect(() => {
-    if (!doctorId) return;
-    
-    // In a real app, this would be an API call
-    const foundDoctor = mockDoctors.find(doc => doc.id === doctorId);
-    if (foundDoctor) {
-      setDoctor(foundDoctor);
-      
-      // Check if the current user is following this doctor
-      // This would be a real API call in a production app
-      setIsFollowing(false); // Default state
-    }
-  }, [doctorId]);
-  
-  const handleStartChat = () => {
+
+  const { data: doctor, isLoading } = useQuery({
+    queryKey: ["doctor", doctorId],
+    queryFn: async () => {
+      // Simulate API fetch
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const doctor = mockDoctors.find((doc) => doc.id === doctorId);
+      if (!doctor) throw new Error("Doctor not found");
+      return doctor as DoctorProfileType;
+    },
+  });
+
+  const { data: appointments } = useQuery({
+    queryKey: ["doctor-appointments", doctorId],
+    queryFn: async () => {
+      // Simulate API fetch
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return mockAppointments.filter((apt) => apt.doctorId === doctorId);
+    },
+  });
+
+  const handleFollow = () => {
     if (!currentUser) {
-      navigate('/login', { state: { redirectTo: `/messages?doctorId=${doctorId}` } });
+      toast({
+        title: "Authentication required",
+        description: "Please log in to follow this doctor",
+        variant: "destructive",
+      });
       return;
     }
-    navigate(`/messages?doctorId=${doctorId}`);
-  };
-  
-  const handleFollowDoctor = () => {
-    if (!currentUser) {
-      navigate('/login', { state: { redirectTo: `/doctor/${doctorId}` } });
-      return;
-    }
-    
-    // Toggle follow status
-    setIsFollowing(!isFollowing);
-    
     toast({
-      title: isFollowing ? "Unfollowed" : "Following",
-      description: isFollowing 
-        ? `You have unfollowed Dr. ${doctor?.name}`
-        : `You are now following Dr. ${doctor?.name}`,
+      title: "Success",
+      description: "You are now following this doctor",
     });
   };
-  
-  const handleBookAppointment = () => {
+
+  const handleMessage = () => {
     if (!currentUser) {
-      navigate('/login', { state: { redirectTo: `/book-appointment/${doctorId}` } });
+      toast({
+        title: "Authentication required",
+        description: "Please log in to message this doctor",
+        variant: "destructive",
+      });
       return;
     }
-    navigate(`/book-appointment/${doctorId}`);
+    // Navigate to messages page with this doctor pre-selected
+    window.location.href = `/messages?doctor=${doctorId}`;
   };
 
-  if (!doctor) {
+  if (isLoading || !doctor) {
     return (
       <Layout>
-        <div className="container mx-auto py-12 px-4 text-center">
-          <p>Doctor not found or loading...</p>
+        <div className="container py-8">
+          <p className="text-center">Loading doctor profile...</p>
         </div>
       </Layout>
     );
@@ -90,171 +88,180 @@ const DoctorProfilePage = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-12 px-4">
-        <div className="max-w-5xl mx-auto">
-          {/* Doctor Header Section */}
-          <Card className="mb-8">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Doctor Avatar */}
-                <div className="w-full md:w-auto flex flex-col items-center">
-                  <Avatar className="h-32 w-32 bg-primary-light">
-                    {doctor.profileImage ? (
-                      <img 
-                        src={doctor.profileImage} 
-                        alt={doctor.name} 
-                        className="w-full h-full rounded-full object-cover" 
-                      />
-                    ) : (
-                      <span className="text-4xl text-primary-dark">
-                        {doctor.name.charAt(0)}
-                      </span>
-                    )}
-                  </Avatar>
-                  
-                  <div className="flex gap-2 mt-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="flex items-center gap-1"
-                      onClick={handleStartChat}
-                    >
-                      <MessageCircle size={16} />
-                      <span>Chat</span>
-                    </Button>
-                    
-                    <Button 
-                      variant={isFollowing ? "default" : "outline"}
-                      size="sm"
-                      className="flex items-center gap-1"
-                      onClick={handleFollowDoctor}
-                    >
-                      <UserPlus size={16} />
-                      <span>{isFollowing ? 'Following' : 'Follow'}</span>
-                    </Button>
-                  </div>
+      <div className="container py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Doctor Info Card */}
+          <div className="md:col-span-1 space-y-6">
+            <Card className="overflow-hidden">
+              <div className="bg-accent h-24 relative">
+                <Avatar className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 h-24 w-24 border-4 border-background">
+                  <AvatarImage src={doctor.profileImage} alt={doctor.name} />
+                  <AvatarFallback>{doctor.name[0]}</AvatarFallback>
+                </Avatar>
+              </div>
+              
+              <CardHeader className="pt-16 text-center">
+                <CardTitle>Dr. {doctor.name}</CardTitle>
+                <CardDescription>{doctor.specialty}</CardDescription>
+                <div className="flex justify-center items-center mt-2">
+                  <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                  <span className="ml-1 font-medium">{doctor.rating || 0}</span>
+                  <span className="ml-1 text-muted-foreground">
+                    ({doctor.reviews?.length || 0} reviews)
+                  </span>
                 </div>
-                
-                {/* Doctor Info */}
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold mb-2">{doctor.name}</h1>
-                  <p className="text-lg text-gray-600 mb-2 capitalize">
-                    {doctor.specialty?.replace('-', ' ')} Specialist
-                  </p>
-                  
-                  <div className="flex items-center mb-4">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star 
-                        key={i} 
-                        size={16} 
-                        className={`${i < doctor.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
-                      />
-                    ))}
-                    <span className="ml-2 text-sm font-medium text-gray-600">
-                      {doctor.rating} ({doctor.reviewsCount || 0} reviews)
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <div className="flex items-center text-gray-600">
-                      <MapPin size={16} className="mr-2" />
-                      <span>{doctor.workPlace}</span>
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Phone size={16} className="mr-2" />
-                      <span>{doctor.phone}</span>
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Mail size={16} className="mr-2" />
-                      <span>{doctor.email}</span>
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Clock size={16} className="mr-2" />
-                      <span>{doctor.experience} years of experience</span>
-                    </div>
-                  </div>
-                  
+              </CardHeader>
+              
+              <CardContent className="text-center">
+                <div className="flex justify-center gap-3 mb-4">
                   <Button 
-                    className="bg-primary hover:bg-primary-dark text-white"
-                    onClick={handleBookAppointment}
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full"
+                    onClick={handleFollow}
                   >
-                    <Calendar className="mr-2 h-4 w-4" /> Book Appointment
+                    <Heart className="h-4 w-4 mr-1" />
+                    Follow
+                  </Button>
+                  <Button 
+                    size="sm"
+                    className="rounded-full"
+                    onClick={handleMessage}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    Message
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                
+                <div className="flex items-center justify-center text-sm mb-3">
+                  <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
+                  <span>{doctor.workPlace || "Private Practice"}</span>
+                </div>
+                
+                <div className="flex items-center justify-center text-sm">
+                  <Award className="h-4 w-4 mr-1 text-muted-foreground" />
+                  <span>{doctor.experience || 0} years of experience</span>
+                </div>
+              </CardContent>
+              
+              <Separator />
+              
+              <CardFooter className="flex flex-col items-start p-4">
+                <h4 className="font-medium mb-2 flex items-center">
+                  <Award className="h-4 w-4 mr-2" />
+                  Certifications
+                </h4>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {doctor.certifications?.map((cert, index) => (
+                    <Badge key={index} variant="outline">
+                      {cert}
+                    </Badge>
+                  ))}
+                </div>
+                
+                <h4 className="font-medium mb-2 flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Biography
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {doctor.bio || "This doctor has not added a bio yet."}
+                </p>
+              </CardFooter>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Contact</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center">
+                  <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span>{doctor.email}</span>
+                </div>
+                {doctor.phone && (
+                  <div className="flex items-center">
+                    <span className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span>{doctor.phone}</span>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Link to={`/book-appointment/${doctor.id}`} className="w-full">
+                  <Button className="w-full">Book Appointment</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          </div>
           
-          {/* Tabs for different sections */}
-          <Tabs defaultValue="about" className="w-full">
-            <TabsList className="grid grid-cols-3 md:w-auto md:inline-grid">
-              <TabsTrigger value="about">About</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              <TabsTrigger value="availability">Availability</TabsTrigger>
-            </TabsList>
-            
-            {/* About Tab */}
-            <TabsContent value="about" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Professional Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Bio</h3>
-                    <p className="text-gray-700">{doctor.bio}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold mb-2">Specializations</h3>
-                    <p className="text-gray-700 capitalize">{doctor.specialty?.replace('-', ' ')}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold mb-2">Certifications</h3>
-                    <ul className="list-disc pl-5 text-gray-700">
-                      {doctor.certifications?.map((cert, index) => (
-                        <li key={index}>{cert}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            {/* Reviews Tab */}
-            <TabsContent value="reviews" className="mt-6">
-              <DoctorReviews doctorId={doctorId || ''} />
-            </TabsContent>
-            
-            {/* Availability Tab */}
-            <TabsContent value="availability" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Available Days</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {doctor.availableDays?.map((day, index) => (
-                      <span 
-                        key={index}
-                        className="px-3 py-1 bg-primary-light text-primary-dark text-sm rounded-full"
-                      >
-                        {day}
-                      </span>
+          {/* Doctor Content Area */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Schedule */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Availability Schedule
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {doctor.availableDays?.length ? (
+                  <div className="space-y-4">
+                    {doctor.availableHours?.map((schedule) => (
+                      <div key={schedule.day} className="flex items-center">
+                        <div className="w-24 font-medium">{schedule.day}</div>
+                        <div className="flex flex-wrap gap-2">
+                          {schedule.hours.map((hour, i) => (
+                            <div key={i} className="bg-accent rounded-md px-3 py-1 text-sm flex items-center">
+                              <Clock className="mr-1 h-3 w-3" />
+                              {hour.start} - {hour.end}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                  {(!doctor.availableDays || doctor.availableDays.length === 0) && (
-                    <p className="text-gray-500">No availability set</p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                ) : (
+                  <p className="text-muted-foreground">No availability schedule provided.</p>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Reviews */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center">
+                  <Star className="mr-2 h-5 w-5" />
+                  Patient Reviews
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DoctorReviews doctorId={doctor.id} />
+              </CardContent>
+            </Card>
+            
+            {/* Latest Posts */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center">
+                  <BookOpen className="mr-2 h-5 w-5" />
+                  Latest Health Posts
+                </CardTitle>
+                <Link to={`/healthy-talk?doctor=${doctor.id}`} className="text-sm text-primary">
+                  View all
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* This would be populated from the API in a real app */}
+                  <p className="text-muted-foreground">No posts yet from this doctor.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </Layout>
   );
 };
 
-export default DoctorProfilePage;
+export default DoctorProfile;
