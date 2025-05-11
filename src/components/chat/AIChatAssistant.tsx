@@ -44,7 +44,7 @@ interface AIChatAssistantProps {
   forDoctors?: boolean;
 }
 
-export default function AIChatAssistant({ forDoctors = false }: AIChatAssistantProps) {
+export default function AIChatAssistant({ forDoctors = true }: AIChatAssistantProps) {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([

@@ -102,15 +102,30 @@ export default function Messages() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left side - Contacts or AI Assistant */}
           <div className="md:col-span-1">
-            <Tabs defaultValue="contacts" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full mb-4">
-                <TabsTrigger value="contacts" className="flex-1">Contacts</TabsTrigger>
-                {currentUser.role === 'doctor' && (
+            {currentUser.role === 'doctor' ? (
+              <Tabs defaultValue="contacts" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="w-full mb-4">
+                  <TabsTrigger value="contacts" className="flex-1">Contacts</TabsTrigger>
                   <TabsTrigger value="ai" className="flex-1">AI Assistant</TabsTrigger>
-                )}
-              </TabsList>
-              
-              <TabsContent value="contacts" className="space-y-4">
+                </TabsList>
+                
+                <TabsContent value="contacts" className="space-y-4">
+                  <ContactsList 
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    filteredContacts={filteredContacts}
+                    selectedContact={selectedContact}
+                    setSelectedContact={setSelectedContact}
+                    currentUser={currentUser}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="ai">
+                  <AIChatAssistant forDoctors={true} />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                   <Input
@@ -162,14 +177,8 @@ export default function Messages() {
                     )}
                   </ScrollArea>
                 </Card>
-              </TabsContent>
-              
-              {currentUser.role === 'doctor' && (
-                <TabsContent value="ai">
-                  <AIChatAssistant forDoctors={true} />
-                </TabsContent>
-              )}
-            </Tabs>
+              </div>
+            )}
           </div>
           
           {/* Right side - Chat Interface */}
@@ -196,5 +205,80 @@ export default function Messages() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+// ContactsList component extracted for better readability
+interface ContactsListProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  filteredContacts: (DoctorProfile | PatientProfile)[];
+  selectedContact: string | null;
+  setSelectedContact: (id: string) => void;
+  currentUser: any;
+}
+
+function ContactsList({ 
+  searchTerm, 
+  setSearchTerm, 
+  filteredContacts, 
+  selectedContact, 
+  setSelectedContact,
+  currentUser
+}: ContactsListProps) {
+  return (
+    <>
+      <div className="relative">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search contacts..."
+          className="pl-9"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <Card>
+        <ScrollArea className="h-[500px]">
+          {filteredContacts.length > 0 ? (
+            <CardContent className="p-2">
+              {filteredContacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  onClick={() => setSelectedContact(contact.id)}
+                  className={`flex items-center gap-3 p-3 rounded-md cursor-pointer hover:bg-gray-100 ${
+                    selectedContact === contact.id ? 'bg-gray-100' : ''
+                  }`}
+                >
+                  <Avatar className="h-10 w-10 bg-primary-light">
+                    {contact.profileImage ? (
+                      <img
+                        src={contact.profileImage}
+                        alt={contact.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-primary-dark" />
+                    )}
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{contact.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {currentUser.role === 'patient'
+                        ? (contact as DoctorProfile).specialty?.replace('-', ' ')
+                        : 'Patient'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          ) : (
+            <CardContent className="p-6 text-center">
+              <p className="text-gray-500">No contacts found</p>
+            </CardContent>
+          )}
+        </ScrollArea>
+      </Card>
+    </>
   );
 }
