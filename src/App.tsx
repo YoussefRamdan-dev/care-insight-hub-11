@@ -22,6 +22,8 @@ import Laboratories from "./pages/Laboratories";
 import HealthTools from "./pages/HealthTools";
 import MedicalRecords from "./pages/MedicalRecords";
 import PatientFiles from "./pages/PatientFiles";
+import DoctorProfile from "./pages/DoctorProfile";
+import DoctorContributions from "./pages/DoctorContributions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +51,8 @@ const App = () => (
             <Route path="/health-tools" element={<HealthTools />} />
             <Route path="/medical-records" element={<MedicalRecords />} />
             <Route path="/patient-files/:patientId" element={<PatientFiles />} />
+            <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
+            <Route path="/doctor-contributions" element={<DoctorContributions />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

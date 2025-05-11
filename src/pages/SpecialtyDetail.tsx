@@ -7,7 +7,7 @@ import { mockDoctors, mockSpecialties } from '../data/mockData';
 import { DoctorProfile, Specialty } from '../types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Star, User } from 'lucide-react';
+import { Calendar, Star, User, MessageCircle, UserPlus } from 'lucide-react';
 
 const SpecialtyDetail = () => {
   const { specialtyId } = useParams<{ specialtyId: string }>();
@@ -37,6 +37,18 @@ const SpecialtyDetail = () => {
       navigate(`/book-appointment/${doctorId}`);
     } else {
       navigate('/login', { state: { redirectTo: `/book-appointment/${doctorId}` } });
+    }
+  };
+  
+  const handleViewProfile = (doctorId: string) => {
+    navigate(`/doctor/${doctorId}`);
+  };
+  
+  const handleStartChat = (doctorId: string) => {
+    if (currentUser) {
+      navigate(`/messages?doctorId=${doctorId}`);
+    } else {
+      navigate('/login', { state: { redirectTo: `/messages?doctorId=${doctorId}` } });
     }
   };
 
@@ -136,12 +148,26 @@ const SpecialtyDetail = () => {
                       <p className="text-sm text-gray-600 mt-1">{doctor.workPlace}</p>
                     </div>
                   </CardContent>
-                  <CardFooter className="pt-2 pb-4">
+                  <CardFooter className="pt-2 pb-4 flex flex-wrap gap-2">
                     <Button 
-                      className="bg-primary hover:bg-primary-dark text-white w-full"
+                      className="bg-primary hover:bg-primary-dark text-white flex-1"
                       onClick={() => handleBookAppointment(doctor.id)}
                     >
-                      <Calendar className="mr-2 h-4 w-4" /> Book Appointment
+                      <Calendar className="mr-2 h-4 w-4" /> Book
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleViewProfile(doctor.id)}
+                    >
+                      <User className="mr-2 h-4 w-4" /> Profile
+                    </Button>
+                    <Button 
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleStartChat(doctor.id)}
+                    >
+                      <MessageCircle className="h-5 w-5" />
                     </Button>
                   </CardFooter>
                 </Card>

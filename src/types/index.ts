@@ -1,4 +1,3 @@
-
 export type UserRole = 'patient' | 'doctor';
 
 export interface User {
@@ -133,4 +132,14 @@ export interface DoctorSchedule {
     day: string;
     hours: { start: string; end: string }[];
   }[];
+}
+
+export interface Review {
+  id: string;
+  doctorId: string;
+  patientId: string;
+  patientName: string;
+  rating: number;
+  comment: string;
+  date: string;
 }
