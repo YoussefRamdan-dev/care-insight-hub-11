@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { z } from "zod";
@@ -99,6 +98,19 @@ const Register = () => {
   const { register, loading } = useAuth();
   const { toast } = useToast();
   const [activeRole, setActiveRole] = useState<UserRole>("patient");
+  
+  // Add state for doctor work hours
+  const [workHours, setWorkHours] = useState<{
+    [key: string]: { enabled: boolean, start: string, end: string }
+  }>({
+    Monday: { enabled: false, start: "09:00", end: "17:00" },
+    Tuesday: { enabled: false, start: "09:00", end: "17:00" },
+    Wednesday: { enabled: false, start: "09:00", end: "17:00" },
+    Thursday: { enabled: false, start: "09:00", end: "17:00" },
+    Friday: { enabled: false, start: "09:00", end: "17:00" },
+    Saturday: { enabled: false, start: "09:00", end: "17:00" },
+    Sunday: { enabled: false, start: "09:00", end: "17:00" },
+  });
 
   const patientForm = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
@@ -171,6 +183,18 @@ const Register = () => {
   };
 
   const onDoctorSubmit = async (values: DoctorFormValues) => {
+    // Format available hours based on the workHours state
+    const availableHours = Object.entries(workHours)
+      .filter(([_, value]) => value.enabled)
+      .map(([day, value]) => ({
+        day,
+        hours: [{ start: value.start, end: value.end }]
+      }));
+
+    const availableDays = Object.entries(workHours)
+      .filter(([_, value]) => value.enabled)
+      .map(([day, _]) => day);
+
     const userData = {
       name: values.name,
       email: values.email,
@@ -180,14 +204,8 @@ const Register = () => {
       role: "doctor" as UserRole,
       certifications: values.certifications ? values.certifications.split(',').map(item => item.trim()) : [],
       clinicLocation: values.clinicLocation,
-      availableDays: values.availableDays || [],
-      availableHours: [{
-        day: "weekdays",
-        hours: [{ 
-          start: values.availableStartTime || "09:00", 
-          end: values.availableEndTime || "17:00" 
-        }]
-      }],
+      availableDays,
+      availableHours,
     };
 
     const user = await register(userData, values.password);
@@ -205,6 +223,16 @@ const Register = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleWorkHoursChange = (day: string, field: 'enabled' | 'start' | 'end', value: boolean | string) => {
+    setWorkHours(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [field]: value
+      }
+    }));
   };
 
   return (
@@ -617,59 +645,48 @@ const Register = () => {
                     />
 
                     <div className="mt-6">
-                      <FormLabel>Available Days</FormLabel>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                          <div key={day} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={day}
-                              onChange={(e) => {
-                                const currentDays = doctorForm.getValues('availableDays') || [];
-                                if (e.target.checked) {
-                                  doctorForm.setValue('availableDays', [...currentDays, day]);
-                                } else {
-                                  doctorForm.setValue('availableDays', 
-                                    currentDays.filter((d) => d !== day)
-                                  );
-                                }
-                              }}
-                              className="rounded border-gray-300 text-primary focus:ring-primary"
-                            />
-                            <label htmlFor={day}>{day}</label>
+                      <h3 className="text-md font-medium mb-4">Working Hours</h3>
+                      <div className="space-y-4">
+                        {Object.entries(workHours).map(([day, hours]) => (
+                          <div key={day} className="flex flex-col md:flex-row gap-4 p-3 border rounded-md">
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                id={`day-${day}`}
+                                checked={hours.enabled}
+                                onChange={(e) => handleWorkHoursChange(day, 'enabled', e.target.checked)}
+                                className="mr-2 rounded border-gray-300 text-primary focus:ring-primary"
+                              />
+                              <label htmlFor={`day-${day}`} className="w-24">{day}</label>
+                            </div>
+                            
+                            <div className="flex flex-1 gap-4 items-center">
+                              <div className="flex-1">
+                                <label htmlFor={`start-${day}`} className="text-sm text-muted-foreground">Start</label>
+                                <Input
+                                  id={`start-${day}`}
+                                  type="time"
+                                  value={hours.start}
+                                  onChange={(e) => handleWorkHoursChange(day, 'start', e.target.value)}
+                                  disabled={!hours.enabled}
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <label htmlFor={`end-${day}`} className="text-sm text-muted-foreground">End</label>
+                                <Input
+                                  id={`end-${day}`}
+                                  type="time"
+                                  value={hours.end}
+                                  onChange={(e) => handleWorkHoursChange(day, 'end', e.target.value)}
+                                  disabled={!hours.enabled}
+                                  className="mt-1"
+                                />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                      <FormField
-                        control={doctorForm.control}
-                        name="availableStartTime"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Available From</FormLabel>
-                            <FormControl>
-                              <Input type="time" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={doctorForm.control}
-                        name="availableEndTime"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Available Until</FormLabel>
-                            <FormControl>
-                              <Input type="time" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                     </div>
                   </div>
 

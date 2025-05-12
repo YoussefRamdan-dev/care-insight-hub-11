@@ -5,12 +5,16 @@ import Layout from '@/components/layout/Layout';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search } from "lucide-react";
+import { Search, PlusCircle } from "lucide-react";
 import HealthPost from '@/components/healthyTalk/HealthPost';
-import { fetchHealthPosts } from '@/api/healthyTalk';
 import { HealthPostFilters } from '@/components/healthyTalk/HealthPostFilters';
+import { fetchHealthPosts } from '@/api/healthyTalk';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const HealthyTalk = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null);
@@ -24,6 +28,10 @@ const HealthyTalk = () => {
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     post.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleCreatePost = () => {
+    navigate('/doctor-contributions');
+  };
 
   return (
     <Layout>
@@ -45,6 +53,12 @@ const HealthyTalk = () => {
               />
             </div>
             <Button>Search</Button>
+            {currentUser && (
+              <Button onClick={handleCreatePost} className="flex items-center">
+                <PlusCircle className="h-4 w-4 mr-1" />
+                Create Post
+              </Button>
+            )}
           </div>
         </div>
 
