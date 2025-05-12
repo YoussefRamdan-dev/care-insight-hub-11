@@ -49,6 +49,7 @@ export const mockDoctors: DoctorProfile[] = [
     email: "doctor@example.com", // Use this to login as doctor
     phone: "555-123-4567",
     role: "doctor",
+    gender: "female", // Added gender property
     specialty: "brain-cancer",
     certifications: ["Board Certified Neurologist", "Brain Cancer Specialist"],
     workPlace: "Memorial Cancer Center",
@@ -82,6 +83,7 @@ export const mockDoctors: DoctorProfile[] = [
     email: "michael.chen@example.com",
     phone: "555-789-1234",
     role: "doctor",
+    gender: "male", // Added gender property
     specialty: "skin-cancer",
     certifications: ["Board Certified Dermatologist", "Skin Cancer Specialist"],
     workPlace: "City Dermatology Clinic",
@@ -111,6 +113,7 @@ export const mockDoctors: DoctorProfile[] = [
     email: "elizabeth.taylor@example.com",
     phone: "555-456-7890",
     role: "doctor",
+    gender: "female", // Added gender property
     specialty: "chest-cancer",
     certifications: ["Board Certified Oncologist", "Pulmonary Specialist"],
     workPlace: "University Hospital",

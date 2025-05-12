@@ -83,7 +83,8 @@ const DoctorDetails = () => {
                   <div className="flex items-center">
                     <h2 className="text-2xl font-bold">Dr. {doctor.name}</h2>
                     <span className="ml-2 text-2xl">
-                      {doctor.gender === 'male' ? '👨‍⚕️' : '👩‍⚕️'}
+                      {/* Safely handle gender with fallback */}
+                      {doctor.gender === 'female' ? '👩‍⚕️' : '👨‍⚕️'}
                     </span>
                   </div>
                   
