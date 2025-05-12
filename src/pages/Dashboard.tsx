@@ -1,236 +1,151 @@
-import { useState } from 'react';
+
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, Star, FilePlus, Pill, TrendingUp, Users, User, BarChart } from 'lucide-react';
-import AIChatAssistant from '@/components/chat/AIChatAssistant';
+import { useQuery } from '@tanstack/react-query';
+import Layout from '@/components/layout/Layout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import UpcomingAppointments from '@/components/dashboard/UpcomingAppointments';
 import ConnectedUsers from '@/components/dashboard/ConnectedUsers';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { mockDoctors, mockAppointments } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function Dashboard() {
-  const navigate = useNavigate();
+const Dashboard = () => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("overview");
-  
-  if (!currentUser) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-full">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-center">Please Log In</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center">You need to be logged in to view your dashboard.</p>
-            </CardContent>
-            <CardFooter className="flex justify-center">
-              <Button onClick={() => navigate('/login')}>Log In</Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const navigate = useNavigate();
 
-  const isDoctor = currentUser.role === 'doctor';
+  // Determine dashboard metrics based on user role
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboardData', currentUser?.id],
+    queryFn: async () => {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Get appointments for current user based on role
+      const userAppointments = mockAppointments.filter(appointment => 
+        currentUser?.role === 'doctor' 
+          ? appointment.doctorId === currentUser.id
+          : appointment.patientId === currentUser.id
+      );
+
+      // Count upcoming appointments
+      const upcomingAppointments = userAppointments.filter(
+        appointment => new Date(appointment.date) > new Date() && appointment.status === 'scheduled'
+      );
+
+      // For a real app, these would come from API calls
+      const unreadMessages = 5;
+      const availableRecords = currentUser?.role === 'patient' ? 12 : 30;
+
+      return {
+        upcomingAppointmentsCount: upcomingAppointments.length,
+        unreadMessagesCount: unreadMessages,
+        availableRecordsCount: availableRecords,
+        appointmentsList: upcomingAppointments,
+        connectedUsers: mockDoctors.filter(user => 
+          user.role !== currentUser?.role
+        ).slice(0, 5)
+      };
+    }
+  });
+
+  // Function to get doctor name for display
+  const getDoctorName = (doctorId: string) => {
+    const doctor = mockDoctors.find(doctor => doctor.id === doctorId);
+    return doctor ? doctor.name : 'Unknown Doctor';
+  };
+
+  // Function to get patient name for display
+  const getPatientName = (patientId: string) => {
+    const patient = mockDoctors.find(user => user.id === patientId);
+    return patient ? patient.name : 'Unknown Patient';
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">
-              Welcome back, {currentUser.name}!
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {isDoctor ? (
-              <Button onClick={() => navigate('/appointments')}>
-                <Calendar className="mr-2 h-4 w-4" />
-                View Appointments
-              </Button>
-            ) : (
-              <Button onClick={() => navigate('/book-appointment')}>
-                <Calendar className="mr-2 h-4 w-4" />
-                Book Appointment
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            {isDoctor && <TabsTrigger value="patients">Patients</TabsTrigger>}
-            {!isDoctor && <TabsTrigger value="doctors">My Doctors</TabsTrigger>}
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            <TabsTrigger value="files">Medical Files</TabsTrigger>
-            {isDoctor && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
-          </TabsList>
-          
-          <TabsContent value="overview" className="space-y-4">
-            <DashboardStats />
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {isDoctor ? "Total Patients" : "Total Appointments"}
-                  </CardTitle>
-                  {isDoctor ? <Users className="h-4 w-4 text-muted-foreground" /> : <Calendar className="h-4 w-4 text-muted-foreground" />}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{isDoctor ? "167" : "12"}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {isDoctor ? "+23 from last month" : "+2 from last month"}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {isDoctor ? "Today's Appointments" : "Upcoming Appointments"}
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{isDoctor ? "8" : "3"}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {isDoctor ? "Next at 10:00 AM" : "Next in 2 days"}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {isDoctor ? "Average Rating" : "Medical Records"}
-                  </CardTitle>
-                  {isDoctor ? <Star className="h-4 w-4 text-muted-foreground" /> : <FilePlus className="h-4 w-4 text-muted-foreground" />}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{isDoctor ? "4.9" : "7"}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {isDoctor ? "From 145 reviews" : "Last updated 5 days ago"}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {isDoctor ? "New Consultations" : "Current Medications"}
-                  </CardTitle>
-                  {isDoctor ? <TrendingUp className="h-4 w-4 text-muted-foreground" /> : <Pill className="h-4 w-4 text-muted-foreground" />}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{isDoctor ? "24" : "3"}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {isDoctor ? "+7 from last week" : "Next refill in 12 days"}
-                  </p>
-                </CardContent>
-              </Card>
+    <Layout>
+      <div className="container py-6">
+        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        
+        {currentUser && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <DashboardStats 
+                upcomingAppointmentsCount={dashboardData?.upcomingAppointmentsCount || 0}
+                unreadMessagesCount={dashboardData?.unreadMessagesCount || 0}
+                availableRecordsCount={dashboardData?.availableRecordsCount || 0}
+                userRole={currentUser.role}
+              />
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <Card className="col-span-4">
-                <CardHeader>
-                  <CardTitle>Upcoming Appointments</CardTitle>
-                </CardHeader>
-                <CardContent className="pl-2">
-                  <UpcomingAppointments />
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-semibold">Upcoming Appointments</CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => navigate('/appointments')}
+                    >
+                      View all
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <UpcomingAppointments 
+                      appointments={dashboardData?.appointmentsList || []}
+                      userRole={currentUser.role}
+                      getDoctorName={getDoctorName}
+                      getPatientName={getPatientName}
+                      formatDate={formatDate}
+                    />
+                  </CardContent>
+                  <CardFooter className="pt-0">
+                    <Button 
+                      className="w-full" 
+                      onClick={() => navigate(currentUser.role === 'doctor' ? '/appointments' : '/book-appointment')}
+                    >
+                      {currentUser.role === 'doctor' ? 'Manage Appointments' : 'Book New Appointment'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
               
-              <Card className="col-span-3">
-                <CardHeader>
-                  <CardTitle>{isDoctor ? "Recent Patients" : "Your Doctors"}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ConnectedUsers />
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full" onClick={() => isDoctor ? setActiveTab("patients") : navigate('/specialties')}>
-                    <User className="mr-2 h-4 w-4" />
-                    {isDoctor ? "View All Patients" : "Find More Specialists"}
-                  </Button>
-                </CardFooter>
-              </Card>
+              <div>
+                <Card className="h-full flex flex-col">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl font-semibold">
+                      {currentUser.role === 'doctor' ? 'My Patients' : 'My Doctors'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <ConnectedUsers 
+                      users={dashboardData?.connectedUsers || []}
+                      currentUserRole={currentUser.role}
+                    />
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => navigate(currentUser.role === 'doctor' ? '/messages' : '/specialties')}
+                    >
+                      {currentUser.role === 'doctor' ? 'Message Patients' : 'Find Specialists'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="patients">
-            {isDoctor && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Patient Management</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>Manage your patients and their medical records.</p>
-                  {/* Patient management interface here */}
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="doctors">
-            {!isDoctor && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Healthcare Providers</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>View and manage your healthcare providers.</p>
-                  {/* Doctors list here */}
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="appointments">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appointments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Manage your upcoming and past appointments.</p>
-                {/* Appointments interface here */}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="files">
-            <Card>
-              <CardHeader>
-                <CardTitle>Medical Files</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Access and manage your medical records and files.</p>
-                {/* Medical files interface here */}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="ai-assistant">
-            {isDoctor && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Medical Assistant</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <AIChatAssistant />
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+          </>
+        )}
       </div>
-    </DashboardLayout>
+    </Layout>
   );
-}
+};
+
+export default Dashboard;
