@@ -17,6 +17,11 @@ import {
   Award,
   BookOpen,
   Mail,
+  Phone,
+  Building,
+  Syringe,
+  FileText,
+  User,
 } from "lucide-react";
 import DoctorReviews from "@/components/doctor/DoctorReviews";
 import { mockDoctors, mockAppointments } from "@/data/mockData";
@@ -86,6 +91,11 @@ const DoctorProfile = () => {
     );
   }
 
+  // Determine doctor emoji based on name (this is just a placeholder logic)
+  const doctorEmoji = doctor.name.toLowerCase().includes('jane') || 
+                      doctor.name.toLowerCase().includes('mary') || 
+                      doctor.name.toLowerCase().includes('sarah') ? '👩‍⚕️' : '👨‍⚕️';
+
   return (
     <Layout>
       <div className="container py-8">
@@ -101,7 +111,10 @@ const DoctorProfile = () => {
               </div>
               
               <CardHeader className="pt-16 text-center">
-                <CardTitle>Dr. {doctor.name}</CardTitle>
+                <CardTitle className="flex items-center justify-center gap-2">
+                  <span>{doctorEmoji}</span>
+                  <span>Dr. {doctor.name}</span>
+                </CardTitle>
                 <CardDescription>{doctor.specialty}</CardDescription>
                 <div className="flex justify-center items-center mt-2">
                   <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
@@ -134,7 +147,7 @@ const DoctorProfile = () => {
                 </div>
                 
                 <div className="flex items-center justify-center text-sm mb-3">
-                  <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
+                  <Building className="h-4 w-4 mr-1 text-muted-foreground" />
                   <span>{doctor.workPlace || "Private Practice"}</span>
                 </div>
                 
@@ -160,7 +173,7 @@ const DoctorProfile = () => {
                 </div>
                 
                 <h4 className="font-medium mb-2 flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4 mr-2" />
                   Biography
                 </h4>
                 <p className="text-sm text-muted-foreground">
@@ -180,7 +193,7 @@ const DoctorProfile = () => {
                 </div>
                 {doctor.phone && (
                   <div className="flex items-center">
-                    <span className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
                     <span>{doctor.phone}</span>
                   </div>
                 )}

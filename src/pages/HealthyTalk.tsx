@@ -39,7 +39,7 @@ const HealthyTalk = () => {
         <div className="flex flex-col items-center mb-10">
           <h1 className="text-4xl font-bold text-center mb-2">Healthy Talk</h1>
           <p className="text-xl text-muted-foreground text-center max-w-2xl">
-            Expert medical insights, tips, and discussions from our community of healthcare professionals
+            Expert medical insights, tips, and discussions from our community of healthcare professionals and patients
           </p>
           
           <div className="flex w-full max-w-lg mt-6 gap-2">

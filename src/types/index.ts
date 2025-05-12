@@ -29,9 +29,9 @@ export interface DoctorProfile extends User {
   certifications: string[];
   workPlace: string;
   bio?: string;
-  experience?: number; // in years
+  experience: number; // in years - making this required
   rating?: number;
-  reviews?: Review[]; // Adding reviews property
+  reviews?: Review[]; // Reviews property
   availableDays?: string[];
   availableHours?: {
     day: string;

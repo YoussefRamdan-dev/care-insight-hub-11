@@ -40,11 +40,7 @@ const generateAIResponse = (message: string): string => {
   }
 };
 
-interface AIChatAssistantProps {
-  forDoctors?: boolean;
-}
-
-export default function AIChatAssistant({ forDoctors = true }: AIChatAssistantProps) {
+export default function AIChatAssistant() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([

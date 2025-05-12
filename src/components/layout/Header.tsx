@@ -39,11 +39,12 @@ export default function Header() {
     navigate('/login');
   };
 
+  // Both doctors and patients will have access to Healthy Talk
   const navigationItems = currentUser ? [
     { path: '/dashboard', label: 'Dashboard', icon: <FileText className="h-4 w-4" /> },
     { path: '/appointments', label: 'Appointments', icon: <Calendar className="h-4 w-4" /> },
-    ...(currentUser.role === 'patient' ? [{ path: '/specialties', label: 'Specialties', icon: <FileText className="h-4 w-4" /> }] : []),
     { path: '/healthy-talk', label: 'Healthy Talk', icon: <BookOpen className="h-4 w-4" /> },
+    ...(currentUser.role === 'patient' ? [{ path: '/specialties', label: 'Specialties', icon: <FileText className="h-4 w-4" /> }] : []),
     { path: '/messages', label: 'Messages', icon: <MessageSquare className="h-4 w-4" /> },
     { path: '/profile', label: 'Profile', icon: <User className="h-4 w-4" /> },
     { path: '/settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> }
