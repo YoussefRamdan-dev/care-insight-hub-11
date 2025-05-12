@@ -13,6 +13,12 @@ import { DoctorProfile } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Edit, Search, Heart, MessageSquare, Calendar } from "lucide-react";
+import { 
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+} from "@/components/ui/dialog";
+import ContributionForm from "@/components/healthyTalk/ContributionForm";
 
 interface Contribution {
   id: string;
@@ -67,6 +73,7 @@ const DoctorContributions = () => {
   const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: doctors } = useQuery({
     queryKey: ["doctors"],
@@ -97,11 +104,9 @@ const DoctorContributions = () => {
       });
       return;
     }
-    // Navigate to contribution editor or open modal
-    toast({
-      title: "Coming soon",
-      description: "The contribution editor will be available soon",
-    });
+    
+    // Using dialog instead of navigating to a new page
+    setIsDialogOpen(true);
   };
 
   const filteredContributions = contributions?.filter((contrib) => {
@@ -129,10 +134,20 @@ const DoctorContributions = () => {
           </div>
           
           {isDoctor && (
-            <Button onClick={handleNewContribution}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Contribution
-            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleNewContribution}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Contribution
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <ContributionForm 
+                  onClose={() => setIsDialogOpen(false)} 
+                  inModal={true}
+                />
+              </DialogContent>
+            </Dialog>
           )}
         </div>
 

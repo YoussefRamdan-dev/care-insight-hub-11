@@ -11,6 +11,8 @@ import { HealthPostFilters } from '@/components/healthyTalk/HealthPostFilters';
 import { fetchHealthPosts } from '@/api/healthyTalk';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import ContributionForm from '@/components/healthyTalk/ContributionForm';
 
 const HealthyTalk = () => {
   const { currentUser } = useAuth();
@@ -18,6 +20,7 @@ const HealthyTalk = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: healthPosts, isLoading, error } = useQuery({
     queryKey: ['healthPosts', selectedSpecialty, selectedDoctor],
@@ -30,7 +33,12 @@ const HealthyTalk = () => {
   );
 
   const handleCreatePost = () => {
-    navigate('/doctor-contributions');
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+    
+    setIsDialogOpen(true);
   };
 
   return (
@@ -54,10 +62,20 @@ const HealthyTalk = () => {
             </div>
             <Button>Search</Button>
             {currentUser && (
-              <Button onClick={handleCreatePost} className="flex items-center">
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Create Post
-              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => handleCreatePost()} className="flex items-center">
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Create Post
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                  <ContributionForm 
+                    onClose={() => setIsDialogOpen(false)} 
+                    inModal={true}
+                  />
+                </DialogContent>
+              </Dialog>
             )}
           </div>
         </div>

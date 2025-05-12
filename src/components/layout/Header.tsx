@@ -22,6 +22,7 @@ import {
   ChevronDown,
   BookOpen
 } from 'lucide-react';
+import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 
 export default function Header() {
   const { currentUser, logout } = useAuth();
@@ -99,6 +100,11 @@ export default function Header() {
 
           {/* User Menu & Mobile Menu Button */}
           <div className="flex items-center space-x-2">
+            {/* Notifications Icon (if logged in) */}
+            {currentUser && (
+              <NotificationsDropdown />
+            )}
+            
             {/* User Menu (if logged in) */}
             {currentUser && (
               <DropdownMenu>

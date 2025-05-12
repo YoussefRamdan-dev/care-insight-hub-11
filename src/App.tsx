@@ -1,68 +1,56 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import UpdateProfile from './pages/UpdateProfile';
+import Dashboard from './pages/Dashboard';
+import Appointments from './pages/Appointments';
+import BookAppointment from './pages/BookAppointment';
+import Specialties from './pages/Specialties';
+import Doctors from './pages/Doctors';
+import DoctorDetails from './pages/DoctorDetails';
+import Messages from './pages/Messages';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import HealthyTalk from './pages/HealthyTalk';
+import DoctorContributions from './pages/DoctorContributions';
+import CreateAppointment from './pages/CreateAppointment';
+import { Toaster } from "@/components/ui/toaster"
+import CreateContribution from './pages/CreateContribution';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-
-// Pages
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Specialties from "./pages/Specialties";
-import SpecialtyDetail from "./pages/SpecialtyDetail";
-import BookAppointment from "./pages/BookAppointment";
-import Appointments from "./pages/Appointments";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Messages from "./pages/Messages";
-import Laboratories from "./pages/Laboratories";
-import HealthTools from "./pages/HealthTools";
-import MedicalRecords from "./pages/MedicalRecords";
-import PatientFiles from "./pages/PatientFiles";
-import DoctorProfile from "./pages/DoctorProfile";
-import DoctorContributions from "./pages/DoctorContributions";
-import NotFound from "./pages/NotFound";
-import HealthyTalk from "./pages/HealthyTalk";
-import HealthPostDetail from "./pages/HealthPostDetail";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+const App = () => {
+  return (
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <Router>
+        <AuthProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/update-profile" element={<UpdateProfile />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/specialties" element={<Specialties />} />
-            <Route path="/specialties/:specialtyId" element={<SpecialtyDetail />} />
-            <Route path="/book-appointment/:doctorId" element={<BookAppointment />} />
             <Route path="/appointments" element={<Appointments />} />
+            <Route path="/book-appointment" element={<BookAppointment />} />
+            <Route path="/specialties" element={<Specialties />} />
+            <Route path="/doctors/:specialty" element={<Doctors />} />
+            <Route path="/doctor/:id" element={<DoctorDetails />} />
+            <Route path="/messages" element={<Messages />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/laboratories" element={<Laboratories />} />
-            <Route path="/health-tools" element={<HealthTools />} />
-            <Route path="/medical-records" element={<MedicalRecords />} />
-            <Route path="/patient-files/:patientId" element={<PatientFiles />} />
-            <Route path="/doctor/:doctorId" element={<DoctorProfile />} />
-            <Route path="/doctor-contributions" element={<DoctorContributions />} />
             <Route path="/healthy-talk" element={<HealthyTalk />} />
-            <Route path="/healthy-talk/:postId" element={<HealthPostDetail />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/doctor-contributions" element={<DoctorContributions />} />
+            <Route path="/create-appointment" element={<CreateAppointment />} />
+        
+        {/* Add new routes */}
+        <Route path="/create-contribution" element={<CreateContribution />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+        </AuthProvider>
+      </Router>
+      <Toaster />
+    </div>
+  );
+};
 
 export default App;
