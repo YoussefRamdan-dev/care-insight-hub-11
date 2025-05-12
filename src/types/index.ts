@@ -1,3 +1,4 @@
+
 export type UserRole = 'patient' | 'doctor';
 
 export interface User {
@@ -30,6 +31,7 @@ export interface DoctorProfile extends User {
   bio?: string;
   experience?: number; // in years
   rating?: number;
+  reviews?: Review[]; // Adding reviews property
   availableDays?: string[];
   availableHours?: {
     day: string;
