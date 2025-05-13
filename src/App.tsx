@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Register from './pages/Register';
 import Login from './pages/Login';
@@ -19,6 +20,7 @@ import DoctorContributions from './pages/DoctorContributions';
 import CreateAppointment from './pages/CreateAppointment';
 import { Toaster } from "@/components/ui/toaster"
 import CreateContribution from './pages/CreateContribution';
+import Index from './pages/Index';
 
 const App = () => {
   return (
@@ -26,6 +28,8 @@ const App = () => {
       <Router>
         <AuthProvider>
           <Routes>
+            {/* Add default route to Index component */}
+            <Route path="/" element={<Index />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -43,8 +47,8 @@ const App = () => {
             <Route path="/doctor-contributions" element={<DoctorContributions />} />
             <Route path="/create-appointment" element={<CreateAppointment />} />
         
-        {/* Add new routes */}
-        <Route path="/create-contribution" element={<CreateContribution />} />
+            {/* Add new routes */}
+            <Route path="/create-contribution" element={<CreateContribution />} />
           </Routes>
         </AuthProvider>
       </Router>
