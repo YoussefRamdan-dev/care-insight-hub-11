@@ -21,12 +21,13 @@ import CreateAppointment from './pages/CreateAppointment';
 import { Toaster } from "@/components/ui/toaster"
 import CreateContribution from './pages/CreateContribution';
 import Index from './pages/Index';
+import NotFound from './pages/NotFound';
 
 const App = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <Router>
-        <AuthProvider>
+      <AuthProvider>
+        <Router>
           <Routes>
             {/* Add default route to Index component */}
             <Route path="/" element={<Index />} />
@@ -46,13 +47,14 @@ const App = () => {
             <Route path="/healthy-talk" element={<HealthyTalk />} />
             <Route path="/doctor-contributions" element={<DoctorContributions />} />
             <Route path="/create-appointment" element={<CreateAppointment />} />
-        
-            {/* Add new routes */}
             <Route path="/create-contribution" element={<CreateContribution />} />
+            
+            {/* Add catch-all route for 404 pages */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
-      </Router>
-      <Toaster />
+        </Router>
+        <Toaster />
+      </AuthProvider>
     </div>
   );
 };
