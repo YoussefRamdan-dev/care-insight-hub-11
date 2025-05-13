@@ -1,3 +1,4 @@
+
 export type UserRole = 'patient' | 'doctor';
 
 export interface User {
@@ -7,7 +8,6 @@ export interface User {
   phone: string;
   role: UserRole;
   profileImage?: string;
-  gender?: 'male' | 'female' | 'other';
 }
 
 export interface PatientProfile extends User {

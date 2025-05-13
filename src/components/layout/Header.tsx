@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,7 +22,6 @@ import {
   ChevronDown,
   BookOpen
 } from 'lucide-react';
-import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 
 export default function Header() {
   const { currentUser, logout } = useAuth();
@@ -40,13 +40,14 @@ export default function Header() {
   };
 
   // Both doctors and patients will have access to Healthy Talk
-  // Removed Profile and Settings from the navigation items
   const navigationItems = currentUser ? [
     { path: '/dashboard', label: 'Dashboard', icon: <FileText className="h-4 w-4" /> },
     { path: '/appointments', label: 'Appointments', icon: <Calendar className="h-4 w-4" /> },
     { path: '/healthy-talk', label: 'Healthy Talk', icon: <BookOpen className="h-4 w-4" /> },
     ...(currentUser.role === 'patient' ? [{ path: '/specialties', label: 'Specialties', icon: <FileText className="h-4 w-4" /> }] : []),
     { path: '/messages', label: 'Messages', icon: <MessageSquare className="h-4 w-4" /> },
+    { path: '/profile', label: 'Profile', icon: <User className="h-4 w-4" /> },
+    { path: '/settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> }
   ] : [
     { path: '/', label: 'Home' },
     { path: '/about', label: 'About' }
@@ -98,11 +99,6 @@ export default function Header() {
 
           {/* User Menu & Mobile Menu Button */}
           <div className="flex items-center space-x-2">
-            {/* Notifications Icon (if logged in) */}
-            {currentUser && (
-              <NotificationsDropdown />
-            )}
-            
             {/* User Menu (if logged in) */}
             {currentUser && (
               <DropdownMenu>

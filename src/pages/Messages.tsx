@@ -1,241 +1,284 @@
 
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
+import { useState, useEffect } from 'react';
+import { nanoid } from 'nanoid';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { mockMessages, mockDoctors, mockPatients } from '@/data/mockData';
+import { Message, DoctorProfile, PatientProfile, DiagnosticFile } from '@/types';
 import ChatInterface from '@/components/chat/ChatInterface';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import AIChatAssistant from '@/components/chat/AIChatAssistant';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Bot, Search, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Search, PlusCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { mockDoctors } from '@/data/mockData';
-import { Message, User } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    senderId: 'doctor1',
-    receiverId: 'patient1',
-    content: 'Hello, how can I help you today?',
-    timestamp: '2025-03-01T09:00:00Z',
-    read: true
-  },
-  {
-    id: '2',
-    senderId: 'patient1',
-    receiverId: 'doctor1',
-    content: 'I\'ve been experiencing headaches for the past few days.',
-    timestamp: '2025-03-01T09:05:00Z',
-    read: true
-  },
-  {
-    id: '3',
-    senderId: 'doctor1',
-    receiverId: 'patient1',
-    content: 'I\'m sorry to hear that. Can you describe the pain and when it usually occurs?',
-    timestamp: '2025-03-01T09:10:00Z',
-    read: true
-  },
-  {
-    id: '4',
-    senderId: 'doctor2',
-    receiverId: 'patient1',
-    content: 'Your lab results look good. No concerns at this time.',
-    timestamp: '2025-03-02T14:30:00Z',
-    read: false
-  }
-];
-
-const Messages = () => {
+export default function Messages() {
   const { currentUser } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  
-  const [conversations, setConversations] = useState<User[]>([]);
-  const [activeChat, setActiveChat] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [recipientUser, setRecipientUser] = useState<User | null>(null);
-  
-  // Extract any passed recipient from navigation
+  const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const [selectedContactName, setSelectedContactName] = useState<string>('');
+  const [contacts, setContacts] = useState<(DoctorProfile | PatientProfile)[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState("contacts");
+
+  // Load contacts based on user role
   useEffect(() => {
-    if (location.state?.recipientId) {
-      setActiveChat(location.state.recipientId);
+    if (!currentUser) return;
+
+    if (currentUser.role === 'patient') {
+      setContacts(mockDoctors);
+    } else {
+      setContacts(mockPatients);
     }
-  }, [location.state]);
+  }, [currentUser]);
 
-  // Fetch conversations
-  const { data: conversationsData } = useQuery({
-    queryKey: ['conversations', currentUser?.id],
-    queryFn: async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // In a real app, this would fetch actual conversation partners
-      // For now, return some mock doctors or patients based on user role
-      return mockDoctors.filter(user => 
-        user.role !== currentUser?.role
-      ).slice(0, 5);
-    },
-    enabled: !!currentUser
-  });
-
-  // Use effect to set initial conversations state
+  // Load messages for the selected contact
   useEffect(() => {
-    if (conversationsData) {
-      setConversations(conversationsData);
-    }
-  }, [conversationsData]);
+    if (!currentUser || !selectedContact) return;
 
-  // Filter conversations based on search query
-  const filteredConversations = conversations.filter(
-    conversation => conversation.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    const filteredMessages = mockMessages.filter(
+      (message) => 
+        (message.senderId === currentUser.id && message.receiverId === selectedContact) ||
+        (message.senderId === selectedContact && message.receiverId === currentUser.id)
+    );
 
-  // Fetch messages for active chat
+    setMessages(filteredMessages.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    ));
+  }, [currentUser, selectedContact]);
+
+  // Set contact name when selecting a contact
   useEffect(() => {
-    if (activeChat && currentUser) {
-      // In a real app, this would be an API call
-      const fetchedMessages = mockMessages.filter(
-        message => 
-          (message.senderId === currentUser.id && message.receiverId === activeChat) ||
-          (message.receiverId === currentUser.id && message.senderId === activeChat)
-      );
-      
-      // Sort by timestamp
-      fetchedMessages.sort((a, b) => 
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
-      
-      setChatMessages(fetchedMessages);
-      
-      // Find recipient user data
-      const recipient = mockDoctors.find(user => user.id === activeChat);
-      if (recipient) {
-        setRecipientUser(recipient);
+    if (selectedContact) {
+      const contact = contacts.find(c => c.id === selectedContact);
+      if (contact) {
+        setSelectedContactName(contact.name);
       }
     }
-  }, [activeChat, currentUser]);
+  }, [selectedContact, contacts]);
 
-  const handleSendMessage = (message: string) => {
-    if (!activeChat || !currentUser || message.trim() === '') return;
-    
+  // Filter contacts by search term
+  const filteredContacts = contacts.filter(contact => 
+    contact.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSendMessage = (content: string, attachments?: DiagnosticFile[]) => {
+    if (!currentUser || !selectedContact) return;
+
     const newMessage: Message = {
-      id: uuidv4(),
+      id: nanoid(),
       senderId: currentUser.id,
-      receiverId: activeChat,
-      content: message,
+      receiverId: selectedContact,
+      content,
       timestamp: new Date().toISOString(),
-      read: false
+      read: false,
+      attachments
     };
+
+    // Add new message to the list
+    setMessages(prevMessages => [...prevMessages, newMessage]);
     
-    // Update UI immediately
-    setChatMessages(prev => [...prev, newMessage]);
-    
-    // In a real app, this would make an API call to save the message
-    console.log('Sending message:', newMessage);
+    // In a real app, you'd send this message to a backend/API
+    // For now, we'll just add it to our local state
   };
 
+  if (!currentUser) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-10">
+          <p>Please log in to view your messages.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <Layout>
-      <div className="container py-6">
-        <h1 className="text-3xl font-bold mb-6">Messages</h1>
+    <DashboardLayout>
+      <div className="container mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Messages</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          {/* Conversations List */}
-          <div className="md:col-span-4">
-            <Card className="h-[70vh] flex flex-col">
-              <CardContent className="p-4 flex-grow flex flex-col">
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search conversations..." 
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left side - Contacts or AI Assistant */}
+          <div className="md:col-span-1">
+            {currentUser.role === 'doctor' ? (
+              <Tabs defaultValue="contacts" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="w-full mb-4">
+                  <TabsTrigger value="contacts" className="flex-1">Contacts</TabsTrigger>
+                  <TabsTrigger value="ai" className="flex-1">AI Assistant</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="contacts" className="space-y-4">
+                  <ContactsList 
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    filteredContacts={filteredContacts}
+                    selectedContact={selectedContact}
+                    setSelectedContact={setSelectedContact}
+                    currentUser={currentUser}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="ai">
+                  <AIChatAssistant forDoctors={true} />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search contacts..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                
-                <div className="flex-grow overflow-y-auto">
-                  {filteredConversations.length > 0 ? (
-                    <div className="space-y-2">
-                      {filteredConversations.map((conversation) => (
-                        <div 
-                          key={conversation.id}
-                          className={`flex items-center gap-3 p-3 rounded-md cursor-pointer ${
-                            activeChat === conversation.id ? 'bg-accent' : 'hover:bg-muted'
-                          }`}
-                          onClick={() => setActiveChat(conversation.id)}
-                        >
-                          <Avatar>
-                            <AvatarImage src={conversation.profileImage} />
-                            <AvatarFallback>{conversation.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-grow min-width-0">
-                            <div className="flex justify-between items-center">
-                              <h3 className="font-medium">{conversation.name}</h3>
-                              <span className="text-xs text-muted-foreground">12:30 PM</span>
+
+                <Card>
+                  <ScrollArea className="h-[500px]">
+                    {filteredContacts.length > 0 ? (
+                      <CardContent className="p-2">
+                        {filteredContacts.map((contact) => (
+                          <div
+                            key={contact.id}
+                            onClick={() => setSelectedContact(contact.id)}
+                            className={`flex items-center gap-3 p-3 rounded-md cursor-pointer hover:bg-gray-100 ${
+                              selectedContact === contact.id ? 'bg-gray-100' : ''
+                            }`}
+                          >
+                            <Avatar className="h-10 w-10 bg-primary-light">
+                              {contact.profileImage ? (
+                                <img
+                                  src={contact.profileImage}
+                                  alt={contact.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <User className="h-5 w-5 text-primary-dark" />
+                              )}
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{contact.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {currentUser.role === 'patient'
+                                  ? (contact as DoctorProfile).specialty?.replace('-', ' ')
+                                  : 'Patient'}
+                              </p>
                             </div>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {conversation.role === 'doctor' 
-                                ? `Dr. ${conversation.name} - ${(conversation as any).specialty}` 
-                                : 'Patient'}
-                            </p>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                      <p className="text-muted-foreground mb-2">No conversations found</p>
-                      <Button variant="outline" size="sm" onClick={() => setSearchQuery('')}>
-                        Clear search
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    className="w-full flex items-center justify-center"
-                    onClick={() => navigate('/specialties')}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    New Conversation
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                        ))}
+                      </CardContent>
+                    ) : (
+                      <CardContent className="p-6 text-center">
+                        <p className="text-gray-500">No contacts found</p>
+                      </CardContent>
+                    )}
+                  </ScrollArea>
+                </Card>
+              </div>
+            )}
           </div>
           
-          {/* Chat Interface */}
-          <div className="md:col-span-8">
-            <Card className="h-[70vh]">
-              {activeChat && recipientUser ? (
-                <ChatInterface 
-                  messages={chatMessages} 
-                  onSendMessage={handleSendMessage} 
-                  recipientId={activeChat}
-                  recipientName={recipientUser.name}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
-                  <p className="text-muted-foreground">
-                    Choose a conversation from the list or start a new one
+          {/* Right side - Chat Interface */}
+          <div className="md:col-span-2">
+            {selectedContact && activeTab === "contacts" ? (
+              <ChatInterface
+                recipientId={selectedContact}
+                recipientName={selectedContactName}
+                messages={messages}
+                onSendMessage={handleSendMessage}
+              />
+            ) : activeTab === "contacts" ? (
+              <Card className="flex items-center justify-center h-[600px] border">
+                <div className="text-center p-6">
+                  <User className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                  <h3 className="text-lg font-medium text-gray-700">Select a contact</h3>
+                  <p className="text-gray-500 max-w-xs mx-auto mt-2">
+                    Choose a contact from the list to start a conversation
                   </p>
                 </div>
-              )}
-            </Card>
+              </Card>
+            ) : null}
           </div>
         </div>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
-};
+}
 
-export default Messages;
+// ContactsList component extracted for better readability
+interface ContactsListProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  filteredContacts: (DoctorProfile | PatientProfile)[];
+  selectedContact: string | null;
+  setSelectedContact: (id: string) => void;
+  currentUser: any;
+}
+
+function ContactsList({ 
+  searchTerm, 
+  setSearchTerm, 
+  filteredContacts, 
+  selectedContact, 
+  setSelectedContact,
+  currentUser
+}: ContactsListProps) {
+  return (
+    <>
+      <div className="relative">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search contacts..."
+          className="pl-9"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <Card>
+        <ScrollArea className="h-[500px]">
+          {filteredContacts.length > 0 ? (
+            <CardContent className="p-2">
+              {filteredContacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  onClick={() => setSelectedContact(contact.id)}
+                  className={`flex items-center gap-3 p-3 rounded-md cursor-pointer hover:bg-gray-100 ${
+                    selectedContact === contact.id ? 'bg-gray-100' : ''
+                  }`}
+                >
+                  <Avatar className="h-10 w-10 bg-primary-light">
+                    {contact.profileImage ? (
+                      <img
+                        src={contact.profileImage}
+                        alt={contact.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5 text-primary-dark" />
+                    )}
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{contact.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {currentUser.role === 'patient'
+                        ? (contact as DoctorProfile).specialty?.replace('-', ' ')
+                        : 'Patient'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          ) : (
+            <CardContent className="p-6 text-center">
+              <p className="text-gray-500">No contacts found</p>
+            </CardContent>
+          )}
+        </ScrollArea>
+      </Card>
+    </>
+  );
+}

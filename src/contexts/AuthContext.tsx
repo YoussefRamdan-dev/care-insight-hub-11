@@ -12,7 +12,6 @@ interface AuthContextType {
   register: (userData: Partial<PatientProfile | DoctorProfile>, password: string) => Promise<User | null>;
   logout: () => void;
   updateUserProfile: (userData: Partial<PatientProfile | DoctorProfile>) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>; // Add the missing resetPassword function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,22 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('careInsightUser', JSON.stringify(updatedUser));
   };
 
-  // Implement the resetPassword function
-  const resetPassword = async (email: string): Promise<void> => {
-    setLoading(true);
-    try {
-      // Mock password reset - in a real application, this would send an email
-      console.log(`Password reset email sent to: ${email}`);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (error) {
-      console.error("Password reset error:", error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const value = {
     currentUser,
     loading,
@@ -114,7 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     updateUserProfile,
-    resetPassword, // Add resetPassword to the context value
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
