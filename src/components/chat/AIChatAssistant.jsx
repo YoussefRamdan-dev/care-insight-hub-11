@@ -2,114 +2,56 @@
 import { useState } from 'react';
 import { nanoid } from 'nanoid';
 import ChatInterface from './ChatInterface';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Bot } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button';
 
-// Mock AI responses
-const aiResponses = {
-  greeting: "Hello doctor! I'm your AI medical assistant. How can I help with your patients today?",
-  appointment: "I can help you schedule patient appointments efficiently. What date range would work for you?",
-  symptoms: "Based on the described symptoms and uploaded files, my analysis suggests the following potential conditions...",
-  diagnosis: "After analyzing the uploaded scan, I've detected signs of an abnormal growth that may indicate early-stage cancer with 87% confidence. I recommend further testing to confirm.",
-  treatment: "Based on the diagnosis results, a possible treatment plan could include targeted radiation therapy followed by regular monitoring.",
-  summary: "Here's a summary of the patient's condition based on the medical history and recent tests...",
-};
-
-// Function to generate AI response
-const generateAIResponse = (message) => {
-  message = message.toLowerCase();
-  
-  if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
-    return aiResponses.greeting;
-  } else if (message.includes('appointment') || message.includes('schedule') || message.includes('book')) {
-    return aiResponses.appointment;
-  } else if (message.includes('symptom') || message.includes('pain') || message.includes('feel')) {
-    return aiResponses.symptoms;
-  } else if (message.includes('diagnosis') || message.includes('analyze') || message.includes('scan')) {
-    return aiResponses.diagnosis;
-  } else if (message.includes('treatment') || message.includes('plan') || message.includes('recommend')) {
-    return aiResponses.treatment;
-  } else if (message.includes('summary') || message.includes('recap')) {
-    return aiResponses.summary;
-  } else {
-    return "I can help with patient diagnosis, treatment planning, and scheduling. Could you provide more details about what you need assistance with?";
-  }
-};
-
-export default function AIChatAssistant({ forDoctors }) {
+const AIChatAssistant = ({ forDoctors }) => {
+  const [showChat, setShowChat] = useState(false);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([
-    {
-      id: nanoid(),
-      senderId: 'ai-bot',
-      receiverId: currentUser?.id || 'user',
-      content: "Hello Doctor! I'm your AI medical assistant. I can help you analyze patient scans, suggest diagnoses, develop treatment plans, and more. How can I assist you today?",
-      timestamp: new Date().toISOString(),
-      read: true
-    }
-  ]);
 
-  if (!currentUser || currentUser.role !== 'doctor') {
-    return (
-      <Card className="flex flex-col items-center justify-center h-[400px]">
-        <CardContent className="text-center p-6">
-          <Bot className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">AI Assistant</h3>
-          <p className="text-gray-500 mb-6">
-            The AI medical assistant is only available for doctors.
-          </p>
-          <Button onClick={() => navigate('/dashboard')}>
-            Return to Dashboard
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Mock AI responses
+  const aiResponses = {
+    greeting: forDoctors 
+      ? "Hello doctor! I'm your AI medical assistant. How can I help with your patients today?"
+      : "Hello! I'm your AI health assistant. How can I help you today?",
+    appointment: forDoctors
+      ? "I can help you schedule patient appointments efficiently. What date range would work for you?"
+      : "I can help you schedule a doctor's appointment. Would you like me to show available slots?",
+    symptoms: forDoctors
+      ? "Based on the described symptoms and uploaded files, my analysis suggests possible conditions to consider."
+      : "Based on the symptoms you've shared, here are some possible conditions. Please consult with a doctor for proper diagnosis."
+  };
 
-  const handleSendMessage = (content, attachments) => {
-    // Add user message
-    const userMessage = {
-      id: nanoid(),
-      senderId: currentUser?.id || 'user',
-      receiverId: 'ai-bot',
-      content,
-      timestamp: new Date().toISOString(),
-      read: true,
-      attachments
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    
-    // Generate AI response after a short delay
-    setTimeout(() => {
-      // Include a reference to attachments in the response if they were included
-      let aiResponse = generateAIResponse(content);
-      if (attachments && attachments.length > 0) {
-        aiResponse = `I've analyzed the ${attachments.length} file(s) you've shared. ${aiResponse}`;
-      }
-      
-      const aiMessage = {
-        id: nanoid(),
-        senderId: 'ai-bot',
-        receiverId: currentUser?.id || 'user',
-        content: aiResponse,
-        timestamp: new Date().toISOString(),
-        read: true
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
-    }, 1500);
+  const handleChatToggle = () => {
+    setShowChat(!showChat);
   };
 
   return (
-    <ChatInterface 
-      isAIAssistant
-      messages={messages}
-      onSendMessage={handleSendMessage}
-    />
+    <div className="fixed bottom-4 right-4 z-40">
+      {!showChat ? (
+        <Button 
+          onClick={handleChatToggle}
+          className="rounded-full h-14 w-14 flex items-center justify-center bg-primary hover:bg-primary/90"
+        >
+          <Bot size={24} />
+        </Button>
+      ) : (
+        <Card className="w-80 md:w-96 h-[500px] shadow-lg">
+          <CardContent className="p-0">
+            <ChatInterface 
+              onClose={handleChatToggle} 
+              initialMessage={aiResponses.greeting}
+              forDoctors={forDoctors}
+            />
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
-}
+};
+
+export default AIChatAssistant;
