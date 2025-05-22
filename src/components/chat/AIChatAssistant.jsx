@@ -39,7 +39,7 @@ const generateAIResponse = (message) => {
   }
 };
 
-export default function AIChatAssistant() {
+export default function AIChatAssistant({ forDoctors }) {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([
